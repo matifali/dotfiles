@@ -3,8 +3,8 @@
 # Check if Zsh is installed and install it if not
 if ! command -v zsh &> /dev/null; then
   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    sudo apt update
-    sudo apt install zsh
+    sudo apt-get update
+    sudo apt-get install zsh -y
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     brew install zsh
   fi
