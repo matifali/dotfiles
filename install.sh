@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check if Zsh is installed and install it if not
-if ! command -v zsh &> /dev/null; then
+if ! command -v zsh &>/dev/null; then
   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     sudo apt-get update
     sudo apt-get install zsh -y
@@ -23,26 +23,32 @@ fi
 # Define the installation directory for the plugins
 PLUGINS_DIR="$HOME/.oh-my-zsh/custom/plugins"
 
-# Install Zsh plugins if not already installed
+# Install Zsh plugins if not already installed otherwise update them
 if [ ! -d "$PLUGINS_DIR/zsh-autosuggestions" ]; then
   git clone https://github.com/zsh-users/zsh-autosuggestions $PLUGINS_DIR/zsh-autosuggestions
+else
+  cd $PLUGINS_DIR/zsh-autosuggestions && git pull
 fi
 
 if [ ! -d "$PLUGINS_DIR/zsh-completions" ]; then
   git clone https://github.com/zsh-users/zsh-completions $PLUGINS_DIR/zsh-completions
+else
+  cd $PLUGINS_DIR/zsh-completions && git pull
 fi
 
 if [ ! -d "$PLUGINS_DIR/zsh-syntax-highlighting" ]; then
   git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $PLUGINS_DIR/zsh-syntax-highlighting
+else
+  cd $PLUGINS_DIR/zsh-syntax-highlighting && git pull
 fi
 
 # Link the .zshrc file
-DOTFILES_DIR=$(pwd)
+DOTFILES_DIR="$(dirname "$0")" # Set DOTFILES_DIR to the directory where the script is located
 # backup existing .zshrc file
 if [ -f ~/.zshrc ]; then
   mv ~/.zshrc ~/.zshrc.bak
 fi
-ln -sf $DOTFILES_DIR/.zshrc ~/.zshrc
+ln -sf "$DOTFILES_DIR/.zshrc" ~/.zshrc
 
 # Add brew and macos plugins for macOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
