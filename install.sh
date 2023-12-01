@@ -12,7 +12,7 @@ fi
 
 # Set Zsh as default shell
 if [ "$SHELL" != "$(which zsh)" ]; then
-  chsh -s $(which zsh)
+  sudo chsh -s $(which zsh) $USER
 fi
 
 # Install Oh My Zsh if not already installed
