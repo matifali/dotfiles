@@ -68,9 +68,11 @@ fi
 ln -sf "$DOTFILES_DIR/.zshrc" ~/.zshrc
 
 # Link the .config/nix/nix.conf file
+mkdir -p ~/.config/nix
 ln -sf "$DOTFILES_DIR/.config/nix/nix.conf" ~/.config/nix/nix.conf
 
 # Link the .config/ghostty/ghostty.conf file
+mkdir -p ~/.config/ghostty
 ln -sf "$DOTFILES_DIR/.config/ghostty/ghostty.conf" ~/.config/ghostty/ghostty.conf
 
 # Add brew and macos plugins for macOS
