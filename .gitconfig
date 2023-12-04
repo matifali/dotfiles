@@ -3,7 +3,7 @@
     email = me@matifali.dev
 
 [core]
-    editor = nano
+    editor = vim
     autocrlf = input      # Handles line endings automatically
 
 [alias]
