@@ -68,8 +68,14 @@ fi
 ln -sf "$DOTFILES_DIR/.zshrc" ~/.zshrc
 
 # Link the .config/nix/nix.conf file
-mkdir -p ~/.config/nix
-ln -sf "$DOTFILES_DIR/.config/nix/nix.conf" ~/.config/nix/nix.conf
+if command -v nix &>/dev/null; then
+  echo "Linking nix.conf"
+  mkdir -p ~/.config/nix
+  ln -sf "$DOTFILES_DIR/.config/nix/nix.conf" ~/.config/nix/nix.conf
+else
+  echo "Nix is not installed, skipping nix.conf"
+  exit 1
+fi
 
 # Link the .config/ghostty/ghostty.conf file
 mkdir -p ~/.config/ghostty
