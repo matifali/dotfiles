@@ -81,4 +81,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   perl -i -pe 's/plugins=\(/plugins=(brew macos /' ~/.zshrc
 fi
 
+# Set the .gitconfig file
+ln -sf "$DOTFILES_DIR/.gitconfig" ~/.gitconfig
+
 echo "Dotfiles installation complete!"
