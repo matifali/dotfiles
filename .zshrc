@@ -7,12 +7,15 @@ ZSH_THEME="agnoster"
 plugins=(git zsh-autosuggestions zsh-completions zsh-syntax-highlighting)
 source $ZSH/oh-my-zsh.sh
 
-# bun completions
-[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+# Add .local/bin to the path
+export PATH="$HOME/.local/bin:$PATH"
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+# bun completions
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 # flyctl
 export FLYCTL_INSTALL="$HOME/.fly"
