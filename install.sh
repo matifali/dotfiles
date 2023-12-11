@@ -68,13 +68,13 @@ fi
 echo "Linking .zshrc"
 ln -sf "$DOTFILES_DIR/.zshrc" ~/.zshrc
 
-# Link the .profile file
-# backup existing .profile file
-if [ -f ~/.profile ]; then
-  mv ~/.profile ~/.profile.bak
+# Link the .zprofile file
+# backup existing .zprofile file
+if [ -f ~/.zprofile ]; then
+  mv ~/.zprofile ~/.zprofile.bak
 fi
-echo "Linking .profile"
-ln -sf "$DOTFILES_DIR/.profile" ~/.profile
+echo "Linking .zprofile"
+ln -sf "$DOTFILES_DIR/.zprofile" ~/.zprofile
 
 # Link the .config/nix/nix.conf file
 if command -v nix &>/dev/null; then
