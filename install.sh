@@ -78,22 +78,26 @@ ln -sf "$DOTFILES_DIR/.zprofile" ~/.zprofile
 
 # Link the .config/nix/nix.conf file
 if command -v nix &>/dev/null; then
-  echo "Linking nix.conf"
   mkdir -p ~/.config/nix
-  ln -sf "$DOTFILES_DIR/.config/nix/nix.conf" ~/.config/nix/nix.conf
+  echo "Linking $DOTFILES_DIR/.config/nix/nix.conf to $HOME/.config/nix/nix.conf"
+  ln -sf "$DOTFILES_DIR/.config/nix/nix.conf" $HOME/.config/nix/nix.conf
 else
   echo "Nix is not installed, skipping nix.conf"
-  exit 1
 fi
 
 # Link the .config/ghostty/ghostty.conf file
-mkdir -p ~/.config/ghostty
-ln -sf "$DOTFILES_DIR/.config/ghostty/ghostty.conf" ~/.config/ghostty/ghostty.conf
+if command -v ghostty &>/dev/null || [ -e "$HOME/Applications/Ghostty.app" ]; then
+  mkdir -p ~/.config/ghostty
+  echo "Linking $DOTFILES_DIR/.config/ghostty/ghostty.conf to $HOME/.config/ghostty/ghostty.conf"
+  ln -sf "$DOTFILES_DIR/.config/ghostty/ghostty.conf" $HOME/.config/ghostty/ghostty.conf
+else
+  echo "Ghostty is not installed, skipping ghostty.conf"
+fi
 
 # Add brew and macos plugins for macOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
   echo "Adding brew and macos plugins for macOS"
-  perl -i -pe 's/plugins=\(/plugins=(brew macos /' ~/.zshrc
+  perl -i -pe 's/plugins=\(/plugins=(brew macos /' $HOME/.zshrc
 fi
 
 # Set the .gitconfig file
