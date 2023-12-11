@@ -65,7 +65,16 @@ fi
 if [ -f ~/.zshrc ]; then
   mv ~/.zshrc ~/.zshrc.bak
 fi
+echo "Linking .zshrc"
 ln -sf "$DOTFILES_DIR/.zshrc" ~/.zshrc
+
+# Link the .profile file
+# backup existing .profile file
+if [ -f ~/.profile ]; then
+  mv ~/.profile ~/.profile.bak
+fi
+echo "Linking .profile"
+ln -sf "$DOTFILES_DIR/.profile" ~/.profile
 
 # Link the .config/nix/nix.conf file
 if command -v nix &>/dev/null; then
