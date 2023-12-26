@@ -17,6 +17,15 @@ if [ -d "$HOME/.bun" ]; then
   [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 fi
 
+# pnpm
+if [ -d "$HOME/.local/share/pnpm" ]; then
+  export PNPM_HOME="$HOME/.local/share/pnpm"
+  case ":$PATH:" in
+    *":$PNPM_HOME:"*) ;;
+    *) export PATH="$PNPM_HOME:$PATH" ;;
+  esac
+fi
+
 # flyctl
 if [ -d "$HOME/.fly" ]; then
   export FLYCTL_INSTALL="$HOME/.fly"
@@ -26,3 +35,17 @@ fi
 
 # Nix 
 if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then . $HOME/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+# bun completions
+[ -s "/home/matifali/.bun/_bun" ] && source "/home/matifali/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# pnpm
+export PNPM_HOME="/home/matifali/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
