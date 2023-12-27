@@ -60,8 +60,26 @@ else
   cd $PLUGINS_DIR/zsh-syntax-highlighting && git pull
 fi
 
+if command -v nix &>/dev/null; then
+  if [ ! -d "$PLUGINS_DIR/nix-zsh-completions" ]; then
+    echo "Installing nix-zsh-completions"
+    git clone https://github.com/nix-community/nix-zsh-completions.git $PLUGINS_DIR/nix-zsh-completions
+  else
+    echo "Updating nix-zsh-completions"
+    cd $PLUGINS_DIR/nix-zsh-completions && git pull
+  fi
+  if [ ! -d "$PLUGINS_DIR/zsh-nix-shell" ]; then
+    echo "Installing zsh-nix-shell"
+    git clone https://github.com/chisui/zsh-nix-shell.git $PLUGINS_DIR/zsh-nix-shell
+  else
+    echo "Updating zsh-nix-shell"
+    cd $PLUGINS_DIR/zsh-nix-shell && git pull
+  fi
+else
+  echo "Nix is not installed, skipping nix-zsh-completions"
+fi
+
 # Link the .zshrc file
-# backup existing .zshrc file
 if [ -f ~/.zshrc ]; then
   mv ~/.zshrc ~/.zshrc.bak
 fi
@@ -69,7 +87,6 @@ echo "Linking .zshrc"
 ln -sf "$DOTFILES_DIR/.zshrc" ~/.zshrc
 
 # Link the .zprofile file
-# backup existing .zprofile file
 if [ -f ~/.zprofile ]; then
   mv ~/.zprofile ~/.zprofile.bak
 fi
@@ -98,6 +115,12 @@ fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
   echo "Adding brew and macos plugins for macOS"
   perl -i -pe 's/plugins=\(/plugins=(brew macos /' $HOME/.zshrc
+fi
+
+# Add nix-shell and nix-zsh-completions plugins for Nix if Nix is installed
+if command -v nix &>/dev/null; then
+  echo "Adding nix-shell and nix-zsh-completions plugins for Nix"
+  perl -i -pe 's/plugins=\(/plugins=(nix-shell nix-zsh-completions /' $HOME/.zshrc
 fi
 
 # Set the .gitconfig file
