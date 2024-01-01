@@ -140,4 +140,10 @@ if command -v bun &>/dev/null; then
   perl -i -pe 's/plugins=\(/plugins=(bun /' $HOME/.zshrc
 fi
 
+## Add jfrog plugin for JFrog CLI if JFrog CLI is installed
+if command -v jfrog &>/dev/null; then
+  echo "Adding jfrog plugin for JFrog CLI"
+  perl -i -pe 's/plugins=\(/plugins=(jfrog /' $HOME/.zshrc
+fi
+
 echo "Dotfiles installation complete!"
