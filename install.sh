@@ -141,7 +141,7 @@ if command -v bun &>/dev/null; then
 fi
 
 ## Add jfrog plugin for JFrog CLI if JFrog CLI is installed
-if command -v jfrog &>/dev/null; then
+if command -v jfrog &>/dev/null || command -v jf &>/dev/null; then
   echo "Adding jfrog plugin for JFrog CLI"
   perl -i -pe 's/plugins=\(/plugins=(jfrog /' $HOME/.zshrc
 fi
