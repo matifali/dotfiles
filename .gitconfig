@@ -31,3 +31,6 @@
 
 [credential]
     helper = cache --timeout=28800   # Cache credentials for 8 hours
+
+[init]
+	defaultBranch = main
