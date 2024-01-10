@@ -19,7 +19,7 @@ fi
 # Set Zsh as default shell
 if [ "$SHELL" != "$(which zsh)" ]; then
   echo "Setting Zsh as default shell for $USER"
-  sudo chsh -s $(which zsh) $USER
+  sudo chsh -s "$(which zsh)" "$USER"
 else
   echo "Zsh is already the default shell"
 fi
@@ -38,42 +38,42 @@ PLUGINS_DIR="$HOME/.oh-my-zsh/custom/plugins"
 # Install Zsh plugins if not already installed otherwise update them
 if [ ! -d "$PLUGINS_DIR/zsh-autosuggestions" ]; then
   echo "Installing zsh-autosuggestions"
-  git clone https://github.com/zsh-users/zsh-autosuggestions $PLUGINS_DIR/zsh-autosuggestions
+  git clone https://github.com/zsh-users/zsh-autosuggestions "$PLUGINS_DIR/zsh-autosuggestions"
 else
   echo "Updating zsh-autosuggestions"
-  cd $PLUGINS_DIR/zsh-autosuggestions && git pull
+  cd "$PLUGINS_DIR/zsh-autosuggestions" && git pull
 fi
 
 if [ ! -d "$PLUGINS_DIR/zsh-completions" ]; then
   echo "Installing zsh-completions"
-  git clone https://github.com/zsh-users/zsh-completions $PLUGINS_DIR/zsh-completions
+  git clone https://github.com/zsh-users/zsh-completions "$PLUGINS_DIR/zsh-completions"
 else
   echo "Updating zsh-completions"
-  cd $PLUGINS_DIR/zsh-completions && git pull
+  cd "$PLUGINS_DIR/zsh-completions" && git pull
 fi
 
 if [ ! -d "$PLUGINS_DIR/zsh-syntax-highlighting" ]; then
   echo "Installing zsh-syntax-highlighting"
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $PLUGINS_DIR/zsh-syntax-highlighting
+  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$PLUGINS_DIR/zsh-syntax-highlighting"
 else
   echo "Updating zsh-syntax-highlighting"
-  cd $PLUGINS_DIR/zsh-syntax-highlighting && git pull
+  cd "$PLUGINS_DIR/zsh-syntax-highlighting" && git pull
 fi
 
 if command -v nix &>/dev/null; then
   if [ ! -d "$PLUGINS_DIR/nix-zsh-completions" ]; then
     echo "Installing nix-zsh-completions"
-    git clone https://github.com/nix-community/nix-zsh-completions.git $PLUGINS_DIR/nix-zsh-completions
+    git clone https://github.com/nix-community/nix-zsh-completions.git "$PLUGINS_DIR/nix-zsh-completions"
   else
     echo "Updating nix-zsh-completions"
-    cd $PLUGINS_DIR/nix-zsh-completions && git pull
+    cd "$PLUGINS_DIR/nix-zsh-completions" && git pull
   fi
   if [ ! -d "$PLUGINS_DIR/nix-shell" ]; then
     echo "Installing zsh-nix-shell"
-    git clone https://github.com/chisui/zsh-nix-shell.git $PLUGINS_DIR/nix-shell
+    git clone https://github.com/chisui/zsh-nix-shell.git "$PLUGINS_DIR/nix-shell"
   else
     echo "Updating zsh-nix-shell"
-    cd $PLUGINS_DIR/nix-shell && git pull
+    cd "$PLUGINS_DIR/nix-shell" && git pull
   fi
 else
   echo "Nix is not installed, skipping nix-zsh-completions"
@@ -97,7 +97,7 @@ ln -sf "$DOTFILES_DIR/.zprofile" ~/.zprofile
 if command -v nix &>/dev/null; then
   mkdir -p ~/.config/nix
   echo "Linking $DOTFILES_DIR/.config/nix/nix.conf to $HOME/.config/nix/nix.conf"
-  ln -sf "$DOTFILES_DIR/.config/nix/nix.conf" $HOME/.config/nix/nix.conf
+  ln -sf "$DOTFILES_DIR/.config/nix/nix.conf" "$HOME/.config/nix/nix.conf"
 else
   echo "Nix is not installed, skipping nix.conf"
 fi
@@ -106,7 +106,7 @@ fi
 if command -v ghostty &>/dev/null || [ -e "$HOME/Applications/Ghostty.app" ]; then
   mkdir -p ~/.config/ghostty
   echo "Linking $DOTFILES_DIR/.config/ghostty/ghostty.conf to $HOME/.config/ghostty/ghostty.conf"
-  ln -sf "$DOTFILES_DIR/.config/ghostty/ghostty.conf" $HOME/.config/ghostty/ghostty.conf
+  ln -sf "$DOTFILES_DIR/.config/ghostty/ghostty.conf" "$HOME/.config/ghostty/ghostty.conf"
 else
   echo "Ghostty is not installed, skipping ghostty.conf"
 fi
@@ -114,36 +114,57 @@ fi
 ## Set the .gitconfig file
 ln -sf "$DOTFILES_DIR/.gitconfig" ~/.gitconfig
 
-
 # Plugins
 ## Add brew and macos plugins for macOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
   echo "Adding brew and macos plugins for macOS"
-  perl -i -pe 's/plugins=\(/plugins=(brew macos /' $HOME/.zshrc
+  perl -i -pe 's/plugins=\(/plugins=(brew macos /' "$HOME/.zshrc"
 fi
 
 ## Add nix-shell and nix-zsh-completions plugins for Nix if Nix is installed
 if command -v nix &>/dev/null; then
   echo "Adding nix-shell and nix-zsh-completions plugins for Nix"
-  perl -i -pe 's/plugins=\(/plugins=(nix-shell nix-zsh-completions /' $HOME/.zshrc
+  perl -i -pe 's/plugins=\(/plugins=(nix-shell nix-zsh-completions /' "$HOME/.zshrc"
 fi
 
 ## Add gh plugin for GitHub CLI if GitHub CLI is installed
 if command -v gh &>/dev/null; then
   echo "Adding gh plugin for GitHub CLI"
-  perl -i -pe 's/plugins=\(/plugins=(gh /' $HOME/.zshrc
+  perl -i -pe 's/plugins=\(/plugins=(gh /' "$HOME/.zshrc"
 fi
 
 ## Add bun plugin for Bun if Bun is installed
 if command -v bun &>/dev/null; then
   echo "Adding bun plugin for Bun"
-  perl -i -pe 's/plugins=\(/plugins=(bun /' $HOME/.zshrc
+  perl -i -pe 's/plugins=\(/plugins=(bun /' "$HOME/.zshrc"
 fi
 
 ## Add jfrog plugin for JFrog CLI if JFrog CLI is installed
 if command -v jfrog &>/dev/null || command -v jf &>/dev/null; then
   echo "Adding jfrog plugin for JFrog CLI"
-  perl -i -pe 's/plugins=\(/plugins=(jfrog /' $HOME/.zshrc
+  perl -i -pe 's/plugins=\(/plugins=(jfrog /' "$HOME/.zshrc"
 fi
 
+# Install GitHub Monasapace variable fonts
+# check if OS is macOS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  destination="$HOME/Library/Fonts"
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  destination="$HOME/.local/share/fonts"
+fi
+mkdir -p "$destination"
+rm -f "$destination/Monaspace*.ttf"
+echo "Installing GitHub Monasapace variable fonts to $destination"
+# Argon
+curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceArgonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceArgonVarVF.ttf"
+# Krypton
+curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceKryptonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceKryptonVarVF.ttf"
+# Neon
+curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceNeonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceNeonVarVF.ttf"
+# Radon
+curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceRadonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceRadonVarVF.ttf"
+# Xenon
+curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceXenonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceXenonVarVF.ttf"
+
+# Install GitHub Monasapace fonts
 echo "Dotfiles installation complete!"
