@@ -3,6 +3,23 @@
 DOTFILES_DIR="$(realpath "$(dirname "$0")")"
 echo "DOTFILES_DIR: $DOTFILES_DIR"
 
+# Set locale
+LOCALE="en_US.UTF-8"
+
+# Check if the locale is available
+if ! locale -a | grep -qx "$LOCALE"; then
+  echo "Locale $LOCALE not found. Generating..."
+  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    sudo locale-gen "$LOCALE"
+    sudo update-locale LANG="$LOCALE"
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
+    sudo locale-gen "$LOCALE"
+    sudo defaults write -g AppleLocale -string "$LOCALE"
+  fi
+else
+  echo "Locale $LOCALE already available."
+fi
+
 # Check if Zsh is installed and install it if not
 if ! command -v zsh &>/dev/null; then
   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
