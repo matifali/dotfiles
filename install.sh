@@ -119,11 +119,11 @@ else
   echo "Nix is not installed, skipping nix.conf"
 fi
 
-## Link the .config/ghostty/ghostty.conf file
+## Link the .config/ghostty/config file
 if command -v ghostty &>/dev/null || [ -e "$HOME/Applications/Ghostty.app" ]; then
   mkdir -p ~/.config/ghostty
-  echo "Linking $DOTFILES_DIR/.config/ghostty/ghostty.conf to $HOME/.config/ghostty/ghostty.conf"
-  ln -sf "$DOTFILES_DIR/.config/ghostty/ghostty.conf" "$HOME/.config/ghostty/ghostty.conf"
+  echo "Linking $DOTFILES_DIR/.config/ghostty/config to $HOME/.config/ghostty/config"
+  ln -sf "$DOTFILES_DIR/.config/ghostty/config" "$HOME/.config/ghostty/config"
 else
   echo "Ghostty is not installed, skipping ghostty.conf"
 fi
@@ -162,26 +162,22 @@ if command -v jfrog &>/dev/null || command -v jf &>/dev/null; then
   perl -i -pe 's/plugins=\(/plugins=(jfrog /' "$HOME/.zshrc"
 fi
 
-# Install GitHub Monasapace variable fonts
-# check if OS is macOS
+# Install HackNerdFont
 if [[ "$OSTYPE" == "darwin"* ]]; then
   destination="$HOME/Library/Fonts"
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
   destination="$HOME/.local/share/fonts"
 fi
 mkdir -p "$destination"
-rm -f "$destination/Monaspace*.ttf"
-echo "Installing GitHub Monasapace variable fonts to $destination"
+rm -f "$destination/HackNerdFont*.ttf"
+echo "Installing HackNerdFont"
 # Argon
-curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceArgonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceArgonVarVF.ttf"
-# Krypton
-curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceKryptonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceKryptonVarVF.ttf"
-# Neon
-curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceNeonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceNeonVarVF.ttf"
-# Radon
-curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceRadonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceRadonVarVF.ttf"
-# Xenon
-curl -sL https://raw.githubusercontent.com/githubnext/monaspace/main/fonts/variable/MonaspaceXenonVarVF%5Bwght%2Cwdth%2Cslnt%5D.ttf -o "$destination/MonaspaceXenonVarVF.ttf"
+curl -sL https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Hack.zip -o /tmp/Hack.zip
+# unzip  the font files only to the destination directory
+unzip -o /tmp/Hack.zip -d "$destination" '*.ttf' && rm /tmp/Hack.zip
+# Update the font cache
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  fc-cache -f -v
+fi
 
-# Install GitHub Monasapace fonts
 echo "Dotfiles installation complete!"
