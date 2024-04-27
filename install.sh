@@ -168,16 +168,19 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
   destination="$HOME/.local/share/fonts"
 fi
-mkdir -p "$destination"
-rm -f "$destination/HackNerdFont*.ttf"
-echo "Installing HackNerdFont"
-# Argon
-curl -sL https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Hack.zip -o /tmp/Hack.zip
-# unzip  the font files only to the destination directory
-unzip -o /tmp/Hack.zip -d "$destination" '*.ttf' && rm /tmp/Hack.zip
-# Update the font cache
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  fc-cache -f -v
+# check if the font is already installed
+if [ -f "$destination/HackNerdFont-Regular.ttf" ]; then
+  echo "HackNerdFont is already installed"
+else
+  echo "Installing HackNerdFont"
+  mkdir -p "$destination"
+  rm -f "$destination/HackNerdFont*.ttf"
+  curl -sL https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Hack.zip -o /tmp/Hack.zip
+  unzip -o /tmp/Hack.zip -d "$destination" '*.ttf' && rm /tmp/Hack.zip
+  # Update the font cache
+  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    fc-cache -f -v
+  fi
 fi
 
 echo "Dotfiles installation complete!"
