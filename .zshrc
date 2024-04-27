@@ -35,6 +35,13 @@ if [ -d "$HOME/.fly" ]; then
   compdef _flyctl fly
 fi
 
+# coder binary
+if [ -d "$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin" ]; then
+  export CODER_BIN="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
+  export PATH="$CODER_BIN:$PATH"
+fi
+# TODO handle for macos
+
 # Nix 
 # single-user installation
 if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then 
