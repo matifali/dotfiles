@@ -36,11 +36,12 @@ if [ -d "$HOME/.fly" ]; then
 fi
 
 # coder binary
-if [ -d "$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin" ]; then
-  export CODER_BIN="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
-  export PATH="$CODER_BIN:$PATH"
-fi
+directory="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
 # TODO handle for macos
+if [ -d "$directory" ]; then
+  # create a symlink to the coder binary if it doesn't exist
+  [ ! -e "$HOME/.local/bin/coder" ] && ln -s "$directory/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
+fi
 
 # Nix 
 # single-user installation
