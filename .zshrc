@@ -39,8 +39,11 @@ fi
 directory="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
 # TODO handle for macos
 if [ -d "$directory" ]; then
-  # create a symlink to the coder binary if it doesn't exist
-  [ ! -e "$HOME/.local/bin/coder" ] && ln -s "$directory/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
+  # check if the symbolic link already exists
+  if [ ! -L "$HOME/.local/bin/coder" ]; then
+    echo "Creating symlink for coder binary"
+    ln -s "$directory/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
+  fi
 fi
 
 # Nix 
