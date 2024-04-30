@@ -46,7 +46,6 @@ directory="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
 if [ -d "$directory" ]; then
   # check if the symbolic link already exists
   if [ ! -L "$HOME/.local/bin/coder" ]; then
-    echo "Creating symlink for coder binary"
     ln -s "$directory/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
   fi
 fi
