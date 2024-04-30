@@ -35,6 +35,11 @@ if [ -d "$HOME/.fly" ]; then
   compdef _flyctl fly
 fi
 
+# tailcale on macOS
+if [ -d "/Applications/Tailscale.app/Contents/MacOS" ]; then
+  alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+fi
+
 # coder binary
 directory="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
 # TODO handle for macos
