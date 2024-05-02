@@ -40,6 +40,11 @@ if [ -d "/Applications/Tailscale.app/Contents/MacOS" ]; then
   alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 fi
 
+# homebrew
+if [ -d "/home/linuxbrew/.linuxbrew" ]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
+
 # coder binary
 directory="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
 # TODO handle for macos
