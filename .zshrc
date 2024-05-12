@@ -11,6 +11,12 @@ source $ZSH/oh-my-zsh.sh
 # Add .local/bin to the path
 export PATH="$HOME/.local/bin:$PATH"
 
+# Aliases 
+# gh auth alias for Coder workspace i.e. CODER=true
+if [ "$CODER" = "true" ]; then
+  alias gh='GITHUB_TOKEN=$(coder external-auth access-token github) gh'
+fi
+
 # bun
 if [ -d "$HOME/.bun" ]; then
   export BUN_INSTALL="$HOME/.bun"
