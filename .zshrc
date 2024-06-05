@@ -11,7 +11,12 @@ source $ZSH/oh-my-zsh.sh
 # Add .local/bin to the path
 export PATH="$HOME/.local/bin:$PATH"
 
-# Aliases 
+# Add /usr/local/go to the path if it exists
+if [ -d "/usr/local/go" ]; then
+  export PATH="/usr/local/go/bin:$PATH"
+fi
+
+# Aliases
 # gh auth alias for Coder workspace i.e. CODER=true
 if [ "$CODER" = "true" ]; then
   alias gh='GITHUB_TOKEN=$(coder external-auth access-token github) gh'
@@ -29,8 +34,8 @@ fi
 if [ -d "$HOME/.local/share/pnpm" ]; then
   export PNPM_HOME="$HOME/.local/share/pnpm"
   case ":$PATH:" in
-    *":$PNPM_HOME:"*) ;;
-    *) export PATH="$PNPM_HOME:$PATH" ;;
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
   esac
 fi
 
@@ -61,10 +66,10 @@ if [ -d "$directory" ]; then
   fi
 fi
 
-# Nix 
+# Nix
 # single-user installation
-if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then 
-  . $HOME/.nix-profile/etc/profile.d/nix.sh; 
+if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then
+  . $HOME/.nix-profile/etc/profile.d/nix.sh
 fi
 # multi-user installation
 if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
