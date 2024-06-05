@@ -144,10 +144,12 @@ if command -v nix &>/dev/null; then
   perl -i -pe 's/plugins=\(/plugins=(nix-shell nix-zsh-completions /' "$HOME/.zshrc"
 fi
 
-## Add gh plugin for GitHub CLI if GitHub CLI is installed
 if command -v gh &>/dev/null; then
+  ## Add gh plugin for GitHub CLI
   echo "Adding gh plugin for GitHub CLI"
   perl -i -pe 's/plugins=\(/plugins=(gh /' "$HOME/.zshrc"
+  # Install gh-dash
+  gh extension install dlvhdr/gh-dash
 fi
 
 ## Add bun plugin for Bun if Bun is installed
