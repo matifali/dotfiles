@@ -149,7 +149,9 @@ if command -v gh &>/dev/null; then
   echo "Adding gh plugin for GitHub CLI"
   perl -i -pe 's/plugins=\(/plugins=(gh /' "$HOME/.zshrc"
   # Install gh-dash
-  gh extension install dlvhdr/gh-dash
+  gh extension install dlvhdr/gh-dash --force
+  # Install gh-copilot
+  gh extension install github/gh-copilot --force
 fi
 
 ## Add bun plugin for Bun if Bun is installed
