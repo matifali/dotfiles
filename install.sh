@@ -152,6 +152,8 @@ if command -v gh &>/dev/null; then
   gh extension install dlvhdr/gh-dash --force
   # Install gh-copilot
   gh extension install github/gh-copilot --force
+  # install gh-act
+  gh extension install nektos/gh-act --force
 fi
 
 ## Add bun plugin for Bun if Bun is installed
