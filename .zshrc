@@ -56,6 +56,12 @@ if [ -d "/home/linuxbrew/.linuxbrew" ]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
+# depot CLI
+if [ -d "$HOME/.depot" ]; then
+  export DEPOT_INSTALL_DIR="$HOME/.depot/bin"
+  export PATH="$DEPOT_INSTALL_DIR:$PATH"
+fi
+
 # coder binary
 directory="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
 # TODO handle for macos
