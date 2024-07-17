@@ -172,9 +172,15 @@ fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
   destination="$HOME/Library/Fonts"
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  # Check for headless Linux by looking for the DISPLAY environment variable
+  if [ -z "$DISPLAY" ]; then
+    echo "Headless Linux detected. Skipping font installation."
+    exit 0
+  fi
   destination="$HOME/.local/share/fonts"
 fi
-# check if the font is already installed
+
+# Check if the font is already installed
 if [ -f "$destination/HackNerdFont-Regular.ttf" ]; then
   echo "HackNerdFont is already installed"
 else
