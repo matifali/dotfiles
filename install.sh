@@ -58,7 +58,7 @@ if [ ! -d "$PLUGINS_DIR/zsh-autosuggestions" ]; then
   git clone https://github.com/zsh-users/zsh-autosuggestions "$PLUGINS_DIR/zsh-autosuggestions"
 else
   echo "Updating zsh-autosuggestions"
-  cd "$PLUGINS_DIR/zsh-autosuggestions" && git pull
+  cd "$PLUGINS_DIR/zsh-autosuggestions" && git pull && cd -
 fi
 
 if [ ! -d "$PLUGINS_DIR/zsh-completions" ]; then
@@ -66,7 +66,7 @@ if [ ! -d "$PLUGINS_DIR/zsh-completions" ]; then
   git clone https://github.com/zsh-users/zsh-completions "$PLUGINS_DIR/zsh-completions"
 else
   echo "Updating zsh-completions"
-  cd "$PLUGINS_DIR/zsh-completions" && git pull
+  cd "$PLUGINS_DIR/zsh-completions" && git pull && cd -
 fi
 
 if [ ! -d "$PLUGINS_DIR/zsh-syntax-highlighting" ]; then
@@ -74,7 +74,7 @@ if [ ! -d "$PLUGINS_DIR/zsh-syntax-highlighting" ]; then
   git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$PLUGINS_DIR/zsh-syntax-highlighting"
 else
   echo "Updating zsh-syntax-highlighting"
-  cd "$PLUGINS_DIR/zsh-syntax-highlighting" && git pull
+  cd "$PLUGINS_DIR/zsh-syntax-highlighting" && git pull && cd -
 fi
 
 if command -v nix &>/dev/null; then
@@ -83,14 +83,14 @@ if command -v nix &>/dev/null; then
     git clone https://github.com/nix-community/nix-zsh-completions.git "$PLUGINS_DIR/nix-zsh-completions"
   else
     echo "Updating nix-zsh-completions"
-    cd "$PLUGINS_DIR/nix-zsh-completions" && git pull
+    cd "$PLUGINS_DIR/nix-zsh-completions" && git pull && cd -
   fi
   if [ ! -d "$PLUGINS_DIR/nix-shell" ]; then
     echo "Installing zsh-nix-shell"
     git clone https://github.com/chisui/zsh-nix-shell.git "$PLUGINS_DIR/nix-shell"
   else
     echo "Updating zsh-nix-shell"
-    cd "$PLUGINS_DIR/nix-shell" && git pull
+    cd "$PLUGINS_DIR/nix-shell" && git pull && cd -
   fi
 else
   echo "Nix is not installed, skipping nix-zsh-completions"
