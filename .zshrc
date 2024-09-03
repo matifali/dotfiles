@@ -88,3 +88,8 @@ fi
 if [ -d "/usr/local/go" ]; then
   export PATH="$(go env GOPATH)/bin:$PATH"
 fi
+
+# Export Secrets
+if [ -f "$HOME/.secrets" ]; then
+  source "$HOME/.secrets"
+fi
