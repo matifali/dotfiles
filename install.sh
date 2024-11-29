@@ -195,4 +195,12 @@ else
   fi
 fi
 
+# Install macOS specific dependencies
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  echo "Installing macOS specific dependencies"
+  brew install gnu-getopt
+  brew install make
+  brew install node@20
+fi
+
 echo "Dotfiles installation complete!"

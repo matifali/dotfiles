@@ -56,6 +56,24 @@ if [ -d "/home/linuxbrew/.linuxbrew" ]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
+# Add GNU tools on macOS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  # Add GNU getopt to PATH
+  if [ -d "$(brew --prefix gnu-getopt)/bin" ]; then
+    export PATH="$(brew --prefix gnu-getopt)/bin:$PATH"
+  fi
+  
+  # Add GNU make to PATH
+  if [ -d "$(brew --prefix make)/libexec/gnubin" ]; then
+    export PATH="$(brew --prefix make)/libexec/gnubin:$PATH"
+  fi
+
+  # Add Node.js 20 to PATH
+  if [ -d "$(brew --prefix node@20)/bin" ]; then
+    export PATH="$(brew --prefix node@20)/bin:$PATH"
+  fi
+fi
+
 # depot CLI
 if [ -d "$HOME/.depot" ]; then
   export DEPOT_INSTALL_DIR="$HOME/.depot/bin"
