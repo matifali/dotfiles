@@ -15,11 +15,7 @@ font-feature = liga
 font-feature = dlig
 font-feature = calt
 
-font-size = 14
-
 clipboard-trim-trailing-spaces = true
-
-macos-non-native-fullscreen = visible-menu
 
 # Theme Catppuccin
 background = 1E1E2E
