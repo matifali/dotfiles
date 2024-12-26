@@ -86,7 +86,11 @@ directory="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
 if [ -d "$directory" ]; then
   # check if the symbolic link already exists
   if [ ! -L "$HOME/.local/bin/coder" ]; then
-    ln -s "$directory/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
+    if [[ "$(uname -m)" == "arm64" ]]; then
+      ln -s "$directory/bin/coder-linux-arm64" "$HOME/.local/bin/coder"
+    else
+      ln -s "$directory/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
+    fi
   fi
 fi
 
@@ -102,8 +106,8 @@ fi
 # End Nix
 
 # GO
-# Add GOPATH to the path
-if [ -d "/usr/local/go" ]; then
+# Add GOPATH to the PATH
+if [ -d "$(go env GOPATH)/bin" ]; then
   export PATH="$(go env GOPATH)/bin:$PATH"
 fi
 
