@@ -2,9 +2,13 @@
     name = Muhammad Atif Ali
     email = me@matifali.dev
 
+[includeIf "env:CODER=true"]
+    [user]
+        email = atif@coder.com
+
 [core]
     editor = vim
-    autocrlf = input      # Handles line endings automatically
+    autocrlf = input
 
 [alias]
     st = status
@@ -24,17 +28,19 @@
     autosetuprebase = always
 
 [fetch]
-    prune = true   # Remove remote-tracking branches that no longer exist on the remote
+    prune = true
 
 [color]
     ui = true
 
 [credential]
-    helper = cache --timeout=28800   # Cache credentials for 8 hours
+    helper = cache --timeout=28800
 
 [init]
-	defaultBranch = main
+    defaultBranch = main
+
 [credential "https://github.com"]
-	helper = gh auth git-credential
+    helper = gh auth git-credential
+
 [credential "https://gist.github.com"]
-	helper = gh auth git-credential
+    helper = gh auth git-credential

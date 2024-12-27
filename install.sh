@@ -128,6 +128,14 @@ else
   echo "Ghostty is not installed, skipping ghostty.conf"
 fi
 
+## Link the .config/zed/settings.json file
+if [ -d "$HOME/.config/zed" ]; then
+  echo "Linking $DOTFILES_DIR/.config/zed/settings.json to $HOME/.config/zed/settings.json"
+  ln -sf "$DOTFILES_DIR/.config/zed/settings.json" "$HOME/.config/zed/settings.json"
+else
+  echo "Zed is not installed, skipping zed settings"
+fi
+
 ## Set the .gitconfig file
 ln -sf "$DOTFILES_DIR/.gitconfig" ~/.gitconfig
 
@@ -154,6 +162,8 @@ if command -v gh &>/dev/null; then
   gh extension install github/gh-copilot --force
   # install gh-act
   gh extension install nektos/gh-act --force
+  # Install gh-copilot
+  gh extension install github/gh-copilot --force
 fi
 
 ## Add bun plugin for Bun if Bun is installed
