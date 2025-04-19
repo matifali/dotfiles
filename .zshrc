@@ -52,7 +52,12 @@ if [ -d "/Applications/Tailscale.app/Contents/MacOS" ]; then
 fi
 
 # homebrew
-if [ -d "/home/linuxbrew/.linuxbrew" ]; then
+# Add Homebrew for macOS (Apple Silicon and Intel)
+if [ -d "/opt/homebrew" ]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [ -d "/usr/local/Homebrew" ]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+elif [ -d "/home/linuxbrew/.linuxbrew" ]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
@@ -81,15 +86,25 @@ if [ -d "$HOME/.depot" ]; then
 fi
 
 # coder binary
-directory="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
-# TODO handle for macos
-if [ -d "$directory" ]; then
+# Handle for macOS and Linux
+CODER_BIN_DIR="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
+if [ -d "$CODER_BIN_DIR" ]; then
   # check if the symbolic link already exists
   if [ ! -L "$HOME/.local/bin/coder" ]; then
-    if [[ "$(uname -m)" == "arm64" ]]; then
-      ln -s "$directory/bin/coder-linux-arm64" "$HOME/.local/bin/coder"
+    if [[ "$(uname)" == "Darwin" ]]; then
+      # Try both Apple Silicon and Intel macOS
+      if [[ -f "$CODER_BIN_DIR/bin/coder-darwin-arm64" ]]; then
+        ln -s "$CODER_BIN_DIR/bin/coder-darwin-arm64" "$HOME/.local/bin/coder"
+      elif [[ -f "$CODER_BIN_DIR/bin/coder-darwin-amd64" ]]; then
+        ln -s "$CODER_BIN_DIR/bin/coder-darwin-amd64" "$HOME/.local/bin/coder"
+      fi
     else
-      ln -s "$directory/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
+      # Linux
+      if [[ "$(uname -m)" == "arm64" ]]; then
+        ln -s "$CODER_BIN_DIR/bin/coder-linux-arm64" "$HOME/.local/bin/coder"
+      else
+        ln -s "$CODER_BIN_DIR/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
+      fi
     fi
   fi
 fi

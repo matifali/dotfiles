@@ -13,7 +13,6 @@ if ! locale -a | grep -qx "$LOCALE"; then
     sudo locale-gen "$LOCALE"
     sudo update-locale LANG="$LOCALE"
   elif [[ "$OSTYPE" == "darwin"* ]]; then
-    sudo locale-gen "$LOCALE"
     sudo defaults write -g AppleLocale -string "$LOCALE"
   fi
 else
@@ -27,6 +26,12 @@ if ! command -v zsh &>/dev/null; then
     sudo apt-get update
     sudo apt-get install zsh -y
   elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # Check if Homebrew is installed
+    if ! command -v brew &>/dev/null; then
+      echo "Homebrew not found. Installing Homebrew..."
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      eval "$($(uname -s | grep -q 'Darwin' && echo '/opt/homebrew/bin/brew' || echo '/usr/local/bin/brew') shellenv)"
+    fi
     brew install zsh
   fi
 else
@@ -140,22 +145,33 @@ fi
 ln -sf "$DOTFILES_DIR/.gitconfig" ~/.gitconfig
 
 # Plugins
+# Helper function for idempotent plugin insertion
+add_plugin() {
+  local plugin="$1"
+  local file="$2"
+  if ! grep -q "plugins=.*$plugin" "$file"; then
+    perl -i -pe "s/plugins=\\(/plugins=($plugin /" "$file"
+  fi
+}
+
 ## Add brew and macos plugins for macOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
   echo "Adding brew and macos plugins for macOS"
-  perl -i -pe 's/plugins=\(/plugins=(brew macos /' "$HOME/.zshrc"
+  add_plugin brew "$HOME/.zshrc"
+  add_plugin macos "$HOME/.zshrc"
 fi
 
 ## Add nix-shell and nix-zsh-completions plugins for Nix if Nix is installed
 if command -v nix &>/dev/null; then
   echo "Adding nix-shell and nix-zsh-completions plugins for Nix"
-  perl -i -pe 's/plugins=\(/plugins=(nix-shell nix-zsh-completions /' "$HOME/.zshrc"
+  add_plugin nix-shell "$HOME/.zshrc"
+  add_plugin nix-zsh-completions "$HOME/.zshrc"
 fi
 
 if command -v gh &>/dev/null; then
   ## Add gh plugin for GitHub CLI
   echo "Adding gh plugin for GitHub CLI"
-  perl -i -pe 's/plugins=\(/plugins=(gh /' "$HOME/.zshrc"
+  add_plugin gh "$HOME/.zshrc"
   # Install gh-dash
   gh extension install dlvhdr/gh-dash --force
   # Install gh-copilot
@@ -169,13 +185,13 @@ fi
 ## Add bun plugin for Bun if Bun is installed
 if command -v bun &>/dev/null; then
   echo "Adding bun plugin for Bun"
-  perl -i -pe 's/plugins=\(/plugins=(bun /' "$HOME/.zshrc"
+  add_plugin bun "$HOME/.zshrc"
 fi
 
 ## Add jfrog plugin for JFrog CLI if JFrog CLI is installed
 if command -v jfrog &>/dev/null || command -v jf &>/dev/null; then
   echo "Adding jfrog plugin for JFrog CLI"
-  perl -i -pe 's/plugins=\(/plugins=(jfrog /' "$HOME/.zshrc"
+  add_plugin jfrog "$HOME/.zshrc"
 fi
 
 # Install HackNerdFont

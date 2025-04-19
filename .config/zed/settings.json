@@ -7,10 +7,25 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "ssh_connections": [
+    {
+      "host": "dogfood.coder",
+      "projects": [
+        {
+          "paths": [
+            "~/repos/coder/modules"
+          ]
+        }
+      ]
+    }
+  ],
+  "features": {
+    "edit_prediction_provider": "zed"
+  },
   "assistant": {
     "default_model": {
       "provider": "zed.dev",
-      "model": "claude-3-5-sonnet-latest"
+      "model": "claude-3-7-sonnet-latest"
     },
     "version": "2"
   },
