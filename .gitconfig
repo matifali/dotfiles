@@ -1,10 +1,7 @@
 [user]
     name = Muhammad Atif Ali
     email = me@matifali.dev
-
-[includeIf "env:CODER=true"]
-    [user]
-        email = atif@coder.com
+    signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL/wCIAddWlYXigBJu4beDxeepccZPI6vDQ6+TzXoC1T 1Password-Atif-macbook
 
 [core]
     editor = vim
@@ -44,3 +41,15 @@
 
 [credential "https://gist.github.com"]
 	helper = !gh auth git-credential
+
+[gpg]
+	format = ssh
+
+[commit]
+	gpgsign = true
+
+[tag]
+	gpgsign = true
+
+[gpg "ssh"]
+	allowedSignersFile = ~/.config/git/allowed_signers
