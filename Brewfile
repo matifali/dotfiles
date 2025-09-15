@@ -1,5 +1,5 @@
 tap "hashicorp/tap"
-tap "homebrew/bundle"
+
 tap "oven-sh/bun"
 brew "bash"
 brew "gh"

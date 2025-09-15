@@ -7,3 +7,4 @@ theme = catppuccin-mocha
 # Shell integration
 shell-integration = detect
 shell-integration-features = cursor,sudo,title,ssh-env,ssh-terminfo
+keybind = shift+enter=text:\n

@@ -456,7 +456,7 @@ configure_plugins() {
 		add_plugin gh "$HOME/.zshrc"
 
 		# Install/upgrade gh extensions with --force to ensure latest versions
-		local extensions=("dlvhdr/gh-dash" "github/gh-copilot" "nektos/gh-act")
+		local extensions=("dlvhdr/gh-dash")
 		for extension in "${extensions[@]}"; do
 			local extension_name="${extension##*/}"         # Extract name after last slash
 			local gh_extension_name="${extension_name#gh-}" # Remove gh- prefix if present
@@ -484,8 +484,11 @@ configure_plugins() {
 	log_success "Plugin configuration completed"
 }
 
-install_hack_nerd_font() {
-	log_info "Installing Hack Nerd Font"
+install_nerd_font() {
+	font_name="JetBrainsMono"
+	font_type="NerdFontMono"
+	version="3.4.0"
+	log_info "Installing ${font_name}${font_type}"
 
 	local destination
 	if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -503,31 +506,31 @@ install_hack_nerd_font() {
 	fi
 
 	# Check if font is already installed
-	if [[ -f "$destination/HackNerdFont-Regular.ttf" ]]; then
-		log_info "Hack Nerd Font is already installed"
+	if [[ -f "${destination}/${font_name}${font_type}-Regular.ttf" ]]; then
+		log_info "${font_name}${font_type} is already installed"
 		return 0
 	fi
 
-	log_info "Installing Hack Nerd Font"
+	log_info "Installing ${font_name}${font_type}"
 	mkdir -p "$destination" || {
 		log_error "Failed to create fonts directory: $destination"
 		return 1
 	}
 
 	# Clean up old fonts
-	rm -f "$destination/HackNerdFont"*.ttf
+	rm -f "$destination/${font_name}${font_type}-"*.ttf
 
 	# Download and install font
-	local temp_zip="/tmp/Hack.zip"
+	local temp_zip="/tmp/${version}/${font_name}.zip"
 	TEMP_FILES+=("$temp_zip")
 
-	safe_curl "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Hack.zip" "$temp_zip" || {
-		log_error "Failed to download Hack Nerd Font"
+	safe_curl "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/${font_name}.zip" "$temp_zip" || {
+		log_error "Failed to download ${font_name}"
 		return 1
 	}
 
 	unzip -o -q "$temp_zip" -d "$destination" '*.ttf' || {
-		log_error "Failed to extract Hack Nerd Font"
+		log_error "Failed to extract ${font_name}"
 		return 1
 	}
 
@@ -538,7 +541,7 @@ install_hack_nerd_font() {
 		}
 	fi
 
-	log_success "Hack Nerd Font installation completed"
+	log_success "${font_name}${font_type} installation completed"
 }
 
 install_macos_dependencies() {
@@ -577,7 +580,7 @@ main() {
 	install_zsh_plugins || exit 1
 	link_config_files || exit 1
 	configure_plugins || exit 1
-	install_hack_nerd_font || exit 1
+	install_nerd_font || exit 1
 	install_macos_dependencies || exit 1
 
 	log_success "Dotfiles installation completed successfully!"
