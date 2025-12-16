@@ -419,6 +419,17 @@ link_config_files() {
 		log_info "Zed is not installed, skipping Zed settings"
 	fi
 
+	# Link .mux/AGENTS.md for AI coding agents
+	mkdir -p "$HOME/.mux" || {
+		log_error "Failed to create .mux directory"
+		return 1
+	}
+	ln -sf "$DOTFILES_DIR/.mux/AGENTS.md" "$HOME/.mux/AGENTS.md" || {
+		log_error "Failed to link .mux/AGENTS.md"
+		return 1
+	}
+	log_info "Linked .mux/AGENTS.md"
+
 	log_success "Configuration files linked successfully"
 }
 
