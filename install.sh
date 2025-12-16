@@ -368,17 +368,14 @@ link_config_files() {
 	}
 	log_info "Linked .gitconfig"
 
-	# Link git config directory (for signing key helper and allowed_signers)
-	mkdir -p "$HOME/.config/git" || {
-		log_error "Failed to create .config/git directory"
-		return 1
-	}
-	if [[ -f "$DOTFILES_DIR/.config/git/get-signing-key.sh" ]]; then
-		ln -sf "$DOTFILES_DIR/.config/git/get-signing-key.sh" "$HOME/.config/git/get-signing-key.sh" || {
-			log_error "Failed to link get-signing-key.sh"
-			return 1
-		}
-		log_info "Linked get-signing-key.sh"
+	# Setup SSH signing key for git
+	# On Linux with SSH agent forwarding, create public key from agent if not present
+	if [[ "$OSTYPE" == "linux-gnu"* ]] && [[ ! -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+		if command_exists ssh-add && ssh-add -L &>/dev/null; then
+			mkdir -p "$HOME/.ssh"
+			ssh-add -L | head -1 > "$HOME/.ssh/id_ed25519.pub"
+			log_info "Created SSH public key from forwarded agent for git signing"
+		fi
 	fi
 
 	# Link Nix config if Nix is installed
