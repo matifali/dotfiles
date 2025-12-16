@@ -368,6 +368,19 @@ link_config_files() {
 	}
 	log_info "Linked .gitconfig"
 
+	# Link git config directory (for signing key helper and allowed_signers)
+	mkdir -p "$HOME/.config/git" || {
+		log_error "Failed to create .config/git directory"
+		return 1
+	}
+	if [[ -f "$DOTFILES_DIR/.config/git/get-signing-key.sh" ]]; then
+		ln -sf "$DOTFILES_DIR/.config/git/get-signing-key.sh" "$HOME/.config/git/get-signing-key.sh" || {
+			log_error "Failed to link get-signing-key.sh"
+			return 1
+		}
+		log_info "Linked get-signing-key.sh"
+	fi
+
 	# Link Nix config if Nix is installed
 	if command_exists nix; then
 		mkdir -p "$HOME/.config/nix" || {
