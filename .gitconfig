@@ -1,8 +1,7 @@
 [user]
     name = Muhammad Atif Ali
     email = me@matifali.dev
-    # signingkey is intentionally unset - using defaultKeyCommand instead
-    # This allows dynamic key retrieval from SSH agent (1Password on macOS, forwarded agent on Linux)
+    signingkey = ~/.ssh/id_ed25519.pub
 
 [core]
     editor = vim
@@ -54,5 +53,3 @@
 
 [gpg "ssh"]
     allowedSignersFile = ~/.config/git/allowed_signers
-    defaultKeyCommand = /bin/bash -c '~/.config/git/get-signing-key.sh'
-	program = !bash -c \"~/.config/git/ssh-sign.sh \\\"\\$@\\\"\" --
