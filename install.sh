@@ -565,6 +565,35 @@ install_nerd_font() {
 	log_success "${font_name}${font_type} installation completed"
 }
 
+install_ghostty_terminfo() {
+	log_info "Installing Ghostty terminfo (xterm-ghostty)"
+
+	if ! command_exists tic; then
+		log_warning "tic not found, skipping Ghostty terminfo installation"
+		return 0
+	fi
+
+	local terminfo_src="$DOTFILES_DIR/xterm-ghostty.terminfo"
+	if [[ ! -f "$terminfo_src" ]]; then
+		log_warning "xterm-ghostty.terminfo not found in dotfiles, skipping"
+		return 0
+	fi
+
+	# Check if already installed
+	if TERM=xterm-ghostty tput longname &>/dev/null; then
+		log_info "Ghostty terminfo already installed"
+		return 0
+	fi
+
+	mkdir -p "$HOME/.terminfo"
+	tic -x -o "$HOME/.terminfo" "$terminfo_src" || {
+		log_error "Failed to install Ghostty terminfo"
+		return 1
+	}
+
+	log_success "Ghostty terminfo installed"
+}
+
 install_macos_dependencies() {
 	if [[ "$OSTYPE" != "darwin"* ]]; then
 		return 0
@@ -602,6 +631,7 @@ main() {
 	link_config_files || exit 1
 	configure_plugins || exit 1
 	install_nerd_font || exit 1
+	install_ghostty_terminfo || exit 1
 	install_macos_dependencies || exit 1
 
 	log_success "Dotfiles installation completed successfully!"
