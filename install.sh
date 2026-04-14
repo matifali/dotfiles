@@ -433,6 +433,21 @@ link_config_files() {
 	log_success "Configuration files linked successfully"
 }
 
+configure_git_signing_hint() {
+	local signing_key="$HOME/.ssh/id_ed25519"
+	local signing_pub="$HOME/.ssh/id_ed25519.pub"
+
+	if [[ -f "$signing_key" && -f "$signing_pub" ]]; then
+		if [[ "$OSTYPE" == "darwin"* ]]; then
+			log_info "Git SSH signing key detected. If needed, load it with: ssh-add --apple-use-keychain $signing_key"
+		else
+			log_info "Git SSH signing key detected. Ensure it is loaded in ssh-agent for signed commits."
+		fi
+	else
+		log_info "Git SSH signing is configured, but no id_ed25519 keypair was found in ~/.ssh"
+	fi
+}
+
 configure_plugins() {
 	log_info "Configuring plugins"
 	local plugins_file="$HOME/.zsh_plugins.local"
@@ -692,6 +707,7 @@ main() {
 	install_oh_my_zsh || exit 1
 	install_zsh_plugins || exit 1
 	link_config_files || exit 1
+	configure_git_signing_hint || exit 1
 	configure_plugins || exit 1
 	install_coder_symlink || exit 1
 	install_nerd_font || exit 1
