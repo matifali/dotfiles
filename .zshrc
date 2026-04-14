@@ -6,6 +6,16 @@ export EDITOR='vim'
 source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 ZSH_THEME="agnoster"
 plugins=(git zsh-autosuggestions zsh-completions zsh-syntax-highlighting)
+
+# Load machine-specific plugin additions without mutating tracked dotfiles.
+ZSH_EXTRA_PLUGINS=()
+if [ -f "$HOME/.zsh_plugins.local" ]; then
+  source "$HOME/.zsh_plugins.local"
+fi
+if [ ${#ZSH_EXTRA_PLUGINS[@]} -gt 0 ]; then
+  plugins=("${ZSH_EXTRA_PLUGINS[@]}" "${plugins[@]}")
+fi
+
 source $ZSH/oh-my-zsh.sh
 
 # Add .local/bin to the path
@@ -61,8 +71,8 @@ elif [ -d "/home/linuxbrew/.linuxbrew" ]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
-# Add GNU tools on macOS
-if [[ "$OSTYPE" == "darwin"* ]]; then
+# Add GNU tools on macOS when Homebrew is available
+if [[ "$OSTYPE" == "darwin"* ]] && command -v brew >/dev/null 2>&1; then
   # Add GNU getopt to PATH
   if [ -d "$(brew --prefix gnu-getopt)/bin" ]; then
     export PATH="$(brew --prefix gnu-getopt)/bin:$PATH"
@@ -85,30 +95,6 @@ if [ -d "$HOME/.depot" ]; then
   export PATH="$DEPOT_INSTALL_DIR:$PATH"
 fi
 
-# coder binary
-# Handle for macOS and Linux
-CODER_BIN_DIR="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
-if [ -d "$CODER_BIN_DIR" ]; then
-  # check if the symbolic link already exists
-  if [ ! -L "$HOME/.local/bin/coder" ]; then
-    if [[ "$(uname)" == "Darwin" ]]; then
-      # Try both Apple Silicon and Intel macOS
-      if [[ -f "$CODER_BIN_DIR/bin/coder-darwin-arm64" ]]; then
-        ln -s "$CODER_BIN_DIR/bin/coder-darwin-arm64" "$HOME/.local/bin/coder"
-      elif [[ -f "$CODER_BIN_DIR/bin/coder-darwin-amd64" ]]; then
-        ln -s "$CODER_BIN_DIR/bin/coder-darwin-amd64" "$HOME/.local/bin/coder"
-      fi
-    else
-      # Linux
-      if [[ "$(uname -m)" == "arm64" ]]; then
-        ln -s "$CODER_BIN_DIR/bin/coder-linux-arm64" "$HOME/.local/bin/coder"
-      else
-        ln -s "$CODER_BIN_DIR/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
-      fi
-    fi
-  fi
-fi
-
 # Nix
 # single-user installation
 if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then
@@ -122,11 +108,18 @@ fi
 
 # GO
 # Add GOPATH to the PATH
-if [ -d "$(go env GOPATH)/bin" ]; then
-  export PATH="$(go env GOPATH)/bin:$PATH"
+if command -v go >/dev/null 2>&1; then
+  if [ -d "$(go env GOPATH)/bin" ]; then
+    export PATH="$(go env GOPATH)/bin:$PATH"
+  fi
 fi
 
 # Export Secrets
 if [ -f "$HOME/.secrets" ]; then
   source "$HOME/.secrets"
+fi
+
+# Optional per-machine overrides.
+if [ -f "$HOME/.zshrc.local" ]; then
+  source "$HOME/.zshrc.local"
 fi
