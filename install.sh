@@ -672,6 +672,34 @@ install_coder_symlink() {
 	log_success "Coder symlink configured"
 }
 
+install_agent_skills() {
+	local skills_dir="$HOME/.agents/skills"
+	local skill_name="terraform-skill"
+	local skill_repo="https://github.com/antonbabenko/terraform-skill"
+	local skill_dir="$skills_dir/$skill_name"
+
+	log_info "Installing/updating agent skill: $skill_name"
+
+	mkdir -p "$skills_dir" || {
+		log_error "Failed to create agent skills directory: $skills_dir"
+		return 1
+	}
+
+	if [[ ! -d "$skill_dir" ]]; then
+		safe_git_clone "$skill_repo" "$skill_dir" || {
+			log_error "Failed to clone $skill_name"
+			return 1
+		}
+	else
+		safe_git_pull "$skill_dir" || {
+			log_error "Failed to update $skill_name"
+			return 1
+		}
+	fi
+
+	log_success "Agent skill $skill_name installed at $skill_dir"
+}
+
 install_macos_dependencies() {
 	if [[ "$OSTYPE" != "darwin"* ]]; then
 		return 0
@@ -712,6 +740,7 @@ main() {
 	install_coder_symlink || exit 1
 	install_nerd_font || exit 1
 	install_ghostty_terminfo || exit 1
+	install_agent_skills || exit 1
 	install_macos_dependencies || exit 1
 
 	log_success "Dotfiles installation completed successfully!"
