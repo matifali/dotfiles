@@ -11,32 +11,10 @@ source $ZSH/oh-my-zsh.sh
 # Add .local/bin to the path
 export PATH="$HOME/.local/bin:$PATH"
 
-# Add /usr/local/go to the path if it exists
-if [ -d "/usr/local/go" ]; then
-  export PATH="/usr/local/go/bin:$PATH"
-fi
-
 # Aliases
 # gh auth alias for Coder workspace i.e. CODER=true
 if [ "$CODER" = "true" ]; then
   alias gh='GITHUB_TOKEN=$(coder external-auth access-token github) gh'
-fi
-
-# bun
-if [ -d "$HOME/.bun" ]; then
-  export BUN_INSTALL="$HOME/.bun"
-  export PATH="$BUN_INSTALL/bin:$PATH"
-  # bun completions
-  [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
-fi
-
-# pnpm
-if [ -d "$HOME/.local/share/pnpm" ]; then
-  export PNPM_HOME="$HOME/.local/share/pnpm"
-  case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-  esac
 fi
 
 # flyctl
@@ -71,11 +49,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   # Add GNU make to PATH
   if [ -d "$(brew --prefix make)/libexec/gnubin" ]; then
     export PATH="$(brew --prefix make)/libexec/gnubin:$PATH"
-  fi
-
-  # Add Node.js 20 to PATH
-  if [ -d "$(brew --prefix node@20)/bin" ]; then
-    export PATH="$(brew --prefix node@20)/bin:$PATH"
   fi
 fi
 
@@ -120,9 +93,15 @@ if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
 fi
 # End Nix
 
+# mise (manages language runtimes and CLI tools)
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+
 # GO
-# Add GOPATH to the PATH
-if [ -d "$(go env GOPATH)/bin" ]; then
+# Add GOPATH to the PATH so binaries from `go install` are runnable.
+# Placed after mise activation since mise provides the `go` binary.
+if command -v go >/dev/null 2>&1 && [ -d "$(go env GOPATH)/bin" ]; then
   export PATH="$(go env GOPATH)/bin:$PATH"
 fi
 

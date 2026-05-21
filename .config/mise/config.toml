@@ -1,0 +1,14 @@
+# Global tools managed by mise.
+# Docs: https://mise.jdx.dev/configuration.html
+#
+# Project-specific tool versions live in each repo's mise.toml and take
+# precedence over these globals.
+
+[tools]
+go = "latest"
+node = "lts"
+bun = "latest"
+gh = "latest"
+shellcheck = "latest"
+shfmt = "latest"
+terraform = "latest"

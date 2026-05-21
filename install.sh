@@ -132,7 +132,7 @@ validate_dotfiles_dir() {
 		return 1
 	fi
 
-	local required_files=(".zshrc" ".zprofile" ".gitconfig" "Brewfile")
+	local required_files=(".zshrc" ".zprofile" ".gitconfig")
 	for file in "${required_files[@]}"; do
 		if [[ ! -f "$DOTFILES_DIR/$file" ]]; then
 			log_error "Required file not found: $DOTFILES_DIR/$file"
@@ -217,22 +217,38 @@ setup_locale() {
 }
 
 install_zsh() {
+	# Installs zsh plus base dependencies the rest of this script needs
+	# (git for cloning Oh My Zsh / plugins, unzip for the nerd font).
+	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+		local missing=()
+		local pkg
+		for pkg in zsh git unzip; do
+			command_exists "$pkg" || missing+=("$pkg")
+		done
+		if [[ ${#missing[@]} -eq 0 ]]; then
+			log_info "Zsh and base deps already installed"
+			return 0
+		fi
+		log_info "Installing: ${missing[*]}"
+		sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq || {
+			log_error "Failed to update package list"
+			return 1
+		}
+		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${missing[@]}" || {
+			log_error "Failed to install: ${missing[*]}"
+			return 1
+		}
+		log_success "Zsh installation completed"
+		return 0
+	fi
+
 	if command_exists zsh; then
 		log_info "Zsh is already installed"
 		return 0
 	fi
 
 	log_info "Installing Zsh"
-	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-		sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq || {
-			log_error "Failed to update package list"
-			return 1
-		}
-		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq zsh || {
-			log_error "Failed to install Zsh"
-			return 1
-		}
-	elif [[ "$OSTYPE" == "darwin"* ]]; then
+	if [[ "$OSTYPE" == "darwin"* ]]; then
 		if ! command_exists brew; then
 			log_info "Installing Homebrew..."
 			NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || {
@@ -407,6 +423,17 @@ link_config_files() {
 	else
 		log_info "Ghostty is not installed, skipping ghostty config"
 	fi
+
+	# Link mise global config (always — mise itself is installed by this script)
+	mkdir -p "$HOME/.config/mise" || {
+		log_error "Failed to create .config/mise directory"
+		return 1
+	}
+	ln -sf "$DOTFILES_DIR/.config/mise/config.toml" "$HOME/.config/mise/config.toml" || {
+		log_error "Failed to link mise config.toml"
+		return 1
+	}
+	log_info "Linked mise config.toml"
 
 	# Link Zed settings if Zed is installed
 	if [[ -d "$HOME/.config/zed" ]]; then
@@ -594,24 +621,31 @@ install_ghostty_terminfo() {
 	log_success "Ghostty terminfo installed"
 }
 
-install_macos_dependencies() {
-	if [[ "$OSTYPE" != "darwin"* ]]; then
-		return 0
+install_mise() {
+	if ! command_exists mise; then
+		log_info "Installing mise"
+		curl -fsSL https://mise.run | sh || {
+			log_error "Failed to install mise"
+			return 1
+		}
+		# Ensure mise is on PATH for the subsequent `mise install` call,
+		# since this shell hasn't sourced .zshrc yet.
+		export PATH="$HOME/.local/bin:$PATH"
+	else
+		log_info "mise is already installed"
 	fi
 
-	log_info "Installing macOS-specific dependencies"
-
-	if ! command_exists brew; then
-		log_error "Homebrew is not installed"
-		return 1
+	# Install tools defined in the global config. Run from $HOME so a stray
+	# mise.toml in the dotfiles dir doesn't get picked up.
+	if [[ -f "$HOME/.config/mise/config.toml" ]]; then
+		log_info "Installing tools from mise global config"
+		(cd "$HOME" && mise install) || {
+			log_error "mise install failed"
+			return 1
+		}
 	fi
 
-	brew bundle --file="$DOTFILES_DIR/Brewfile" --quiet || {
-		log_error "Failed to install dependencies from Brewfile"
-		return 1
-	}
-
-	log_success "macOS dependencies installation completed"
+	log_success "mise installation completed"
 }
 
 # Main execution
@@ -632,7 +666,7 @@ main() {
 	configure_plugins || exit 1
 	install_nerd_font || exit 1
 	install_ghostty_terminfo || exit 1
-	install_macos_dependencies || exit 1
+	install_mise || exit 1
 
 	log_success "Dotfiles installation completed successfully!"
 	log_info "Please restart your terminal or run 'source ~/.zshrc' to apply changes."
