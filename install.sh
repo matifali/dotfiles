@@ -460,76 +460,35 @@ link_config_files() {
 	log_success "Configuration files linked successfully"
 }
 
-# Helper function for idempotent plugin insertion
-add_plugin() {
-	local plugin="$1"
-	local file="$2"
-
-	if [[ ! -f "$file" ]]; then
-		log_error "File not found: $file"
-		return 1
-	fi
-
-	if ! grep -q "plugins=.*$plugin" "$file"; then
-		perl -i -pe "s/plugins=\\(/plugins=($plugin /" "$file" || {
-			log_error "Failed to add plugin $plugin to $file"
-			return 1
-		}
-		log_info "Added $plugin plugin"
-	else
-		log_info "$plugin plugin already present"
-	fi
-}
-
-configure_plugins() {
-	log_info "Configuring plugins"
-
-	# Add macOS-specific plugins
-	if [[ "$OSTYPE" == "darwin"* ]]; then
-		log_info "Adding macOS-specific plugins"
-		add_plugin brew "$HOME/.zshrc"
-		add_plugin macos "$HOME/.zshrc"
-	fi
-
-	# Add Nix plugins if Nix is installed
-	if command_exists nix; then
-		log_info "Adding Nix plugins"
-		add_plugin nix-shell "$HOME/.zshrc"
-		add_plugin nix-zsh-completions "$HOME/.zshrc"
-	fi
-
-	# Add GitHub CLI plugins if gh is installed
+install_gh_extensions() {
+	# Plugin selection is now done dynamically in .zshrc based on installed
+	# tools, so this function only handles install-time work.
+	#
+	# `gh` is typically provided by mise, which isn't activated in this
+	# script's shell. Route through `mise exec` when mise is present so we
+	# find gh regardless of activation state.
+	local gh_cmd
 	if command_exists gh; then
-		log_info "Adding GitHub CLI plugins and extensions"
-		add_plugin gh "$HOME/.zshrc"
-
-		# Install/upgrade gh extensions with --force to ensure latest versions
-		local extensions=("dlvhdr/gh-dash")
-		for extension in "${extensions[@]}"; do
-			local extension_name="${extension##*/}"         # Extract name after last slash
-			local gh_extension_name="${extension_name#gh-}" # Remove gh- prefix if present
-
-			log_info "Installing/updating gh extension: $extension"
-			if gh extension install "$extension" --force >/dev/null 2>&1; then
-				log_info "gh extension $gh_extension_name installed/updated successfully"
-			else
-				log_info "Skipping gh extension $gh_extension_name (may require authentication or network access)"
-			fi
-		done
+		gh_cmd=(gh)
+	elif command_exists mise && mise which gh >/dev/null 2>&1; then
+		gh_cmd=(mise exec -- gh)
+	else
+		log_info "gh not available; skipping gh extension install"
+		return 0
 	fi
 
-	# Add other tool-specific plugins
-	if command_exists bun; then
-		log_info "Adding Bun plugin"
-		add_plugin bun "$HOME/.zshrc"
-	fi
-
-	if command_exists jfrog || command_exists jf; then
-		log_info "Adding JFrog plugin"
-		add_plugin jfrog "$HOME/.zshrc"
-	fi
-
-	log_success "Plugin configuration completed"
+	log_info "Installing/updating gh extensions"
+	local extensions=("dlvhdr/gh-dash")
+	local extension extension_name
+	for extension in "${extensions[@]}"; do
+		extension_name="${extension##*/}"
+		extension_name="${extension_name#gh-}"
+		if "${gh_cmd[@]}" extension install "$extension" --force >/dev/null 2>&1; then
+			log_info "gh extension $extension_name installed/updated"
+		else
+			log_info "Skipping gh extension $extension_name (may require auth or network)"
+		fi
+	done
 }
 
 install_nerd_font() {
@@ -663,10 +622,10 @@ main() {
 	install_oh_my_zsh || exit 1
 	install_zsh_plugins || exit 1
 	link_config_files || exit 1
-	configure_plugins || exit 1
 	install_nerd_font || exit 1
 	install_ghostty_terminfo || exit 1
 	install_mise || exit 1
+	install_gh_extensions || exit 1
 
 	log_success "Dotfiles installation completed successfully!"
 	log_info "Please restart your terminal or run 'source ~/.zshrc' to apply changes."
