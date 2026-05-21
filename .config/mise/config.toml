@@ -4,6 +4,13 @@
 # Project-specific tool versions live in each repo's mise.toml and take
 # precedence over these globals.
 
+[settings]
+# Maintain a per-machine lockfile at ~/.config/mise/mise.lock so the
+# global tools are resolvable when entering a project that sets
+# `locked = true` (e.g. coder/coder/mise.toml). The lockfile is not
+# committed; each machine generates its own via `mise install`.
+lockfile = true
+
 [tools]
 go = "latest"
 node = "lts"

@@ -602,6 +602,12 @@ install_mise() {
 			log_error "mise install failed"
 			return 1
 		}
+		# Generate ~/.config/mise/mise.lock so project configs with
+		# `locked = true` (e.g. coder/coder/mise.toml) can resolve the
+		# globally-defined tools without warnings.
+		(cd "$HOME" && mise lock --global) || {
+			log_warning "mise lock --global failed (continuing)"
+		}
 	fi
 
 	log_success "mise installation completed"
