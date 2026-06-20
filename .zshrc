@@ -52,26 +52,6 @@ if [ -d "/Applications/Tailscale.app/Contents/MacOS" ]; then
   alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 fi
 
-# Coder binary (from VS Code extension)
-CODER_BIN_DIR="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
-if [ -d "$CODER_BIN_DIR" ]; then
-  if [ ! -L "$HOME/.local/bin/coder" ]; then
-    if [[ "$(uname)" == "Darwin" ]]; then
-      if [[ -f "$CODER_BIN_DIR/bin/coder-darwin-arm64" ]]; then
-        ln -s "$CODER_BIN_DIR/bin/coder-darwin-arm64" "$HOME/.local/bin/coder"
-      elif [[ -f "$CODER_BIN_DIR/bin/coder-darwin-amd64" ]]; then
-        ln -s "$CODER_BIN_DIR/bin/coder-darwin-amd64" "$HOME/.local/bin/coder"
-      fi
-    else
-      if [[ "$(uname -m)" == "arm64" ]]; then
-        ln -s "$CODER_BIN_DIR/bin/coder-linux-arm64" "$HOME/.local/bin/coder"
-      else
-        ln -s "$CODER_BIN_DIR/bin/coder-linux-amd64" "$HOME/.local/bin/coder"
-      fi
-    fi
-  fi
-fi
-
 # Nix
 if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
   . "$HOME/.nix-profile/etc/profile.d/nix.sh"
@@ -81,6 +61,7 @@ if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
 fi
 
 # Add GOPATH/bin to PATH for binaries from `go install`.
+# Placed after mise activation since mise provides the `go` binary.
 if command -v go >/dev/null 2>&1 && [ -d "$(go env GOPATH)/bin" ]; then
   export PATH="$(go env GOPATH)/bin:$PATH"
 fi
@@ -90,3 +71,7 @@ if [ -f "$HOME/.secrets" ]; then
   source "$HOME/.secrets"
 fi
 
+# Optional per-machine overrides.
+if [ -f "$HOME/.zshrc.local" ]; then
+  source "$HOME/.zshrc.local"
+fi
