@@ -52,29 +52,6 @@ if [ -d "/Applications/Tailscale.app/Contents/MacOS" ]; then
   alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 fi
 
-# flyctl
-if [ -d "$HOME/.fly" ]; then
-  export FLYCTL_INSTALL="$HOME/.fly"
-  export PATH="$FLYCTL_INSTALL/bin:$PATH"
-  compdef _flyctl fly
-fi
-
-# GNU tools on macOS
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  if [ -d "$(brew --prefix gnu-getopt)/bin" ]; then
-    export PATH="$(brew --prefix gnu-getopt)/bin:$PATH"
-  fi
-  if [ -d "$(brew --prefix make)/libexec/gnubin" ]; then
-    export PATH="$(brew --prefix make)/libexec/gnubin:$PATH"
-  fi
-fi
-
-# depot CLI
-if [ -d "$HOME/.depot" ]; then
-  export DEPOT_INSTALL_DIR="$HOME/.depot/bin"
-  export PATH="$DEPOT_INSTALL_DIR:$PATH"
-fi
-
 # Coder binary (from VS Code extension)
 CODER_BIN_DIR="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
 if [ -d "$CODER_BIN_DIR" ]; then
@@ -112,3 +89,4 @@ fi
 if [ -f "$HOME/.secrets" ]; then
   source "$HOME/.secrets"
 fi
+

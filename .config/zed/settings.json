@@ -7,44 +7,121 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  // "proxy": "https://localhost:8000",
+  "proxy": "",
+  "session": {
+    "trust_all_worktrees": true
+  },
+  "cli_default_open_behavior": "existing_window",
+  "project_panel": {
+    "dock": "left",
+  },
+  "outline_panel": {
+    "dock": "left",
+  },
+  "collaboration_panel": {
+    "dock": "left",
+  },
+  "ssh_connections": [
+    {
+      "host": "dogfood.coder",
+      "args": [],
+      "projects": [
+        {
+          "paths": ["/home/coder"],
+        },
+        {
+          "paths": ["/home/coder/coder"],
+        },
+      ],
+    },
+  ],
+  "edit_predictions": {
+    "provider": "zed",
+  },
+  "git_panel": {
+    "dock": "left",
+    "tree_view": false,
+  },
+  "language_models": {
+    "anthropic": {
+      "api_url": "https://dev.coder.com/api/v2/aibridge/anthropic",
+    },
+    "openai": {
+      "api_url": "https://dev.coder.com/api/v2/aibridge/openai/v1",
+    },
+  },
   "calls": {
-    "mute_on_join": true
+    "mute_on_join": true,
   },
   "use_smartcase_search": true,
   "buffer_font_family": ".ZedMono",
   "redact_private_values": true,
   "icon_theme": {
     "mode": "system",
-    "light": "Material Icon Theme",
-    "dark": "Material Icon Theme"
-  },
-  "features": {
-    "edit_prediction_provider": "zed"
+    "light": "Zed (Default)",
+    "dark": "Zed (Default)",
   },
   "agent": {
-    "play_sound_when_agent_done": true,
-    "always_allow_tool_actions": true,
-    "default_model": {
+    "button": true,
+    "dock": "right",
+    "tool_permissions": {
+      "default": "allow",
+    },
+    "favorite_models": [
+      {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-6-thinking-latest",
+      },
+      {
+        "provider": "openai",
+        "model": "gpt-5.4",
+      },
+      {
+        "provider": "anthropic",
+        "model": "claude-opus-4-7-thinking-latest",
+      },
+    ],
+    "inline_assistant_model": {
       "provider": "anthropic",
-      "model": "claude-sonnet-4-5-latest"
-    }
+      "model": "claude-sonnet-4-6-latest",
+    },
+    "notify_when_agent_waiting": "all_screens",
+    "profiles": {
+      "dangerous": {
+        "default_model": {
+          "provider": "anthropic",
+          "model": "opus-4.7",
+        },
+        "name": "Dangerous",
+        "tools": {},
+        "enable_all_context_servers": false,
+        "context_servers": {},
+      },
+    },
+    "default_profile": "write",
+    "play_sound_when_agent_done": "always",
+    "default_model": {
+      "effort": "medium",
+      "enable_thinking": true,
+      "provider": "zed.dev",
+      "model": "gpt-5.5",
+    },
   },
   "ui_font_size": 14,
   "buffer_font_size": 14,
   "agent_ui_font_size": 14,
   "theme": {
     "mode": "system",
-    "light": "macOS Classic Light",
-    "dark": "macOS Classic Dark"
+    "light": "One Light",
+    "dark": "One Dark",
   },
   "terminal": {
     "toolbar": {
-      "breadcrumbs": true
+      "breadcrumbs": true,
     },
     "font_family": "JetBrainsMono Nerd Font Mono",
     "font_size": 14,
-    "shell": {
-      "program": "zsh"
-    }
-  }
+    "shell": "system",
+  },
 }
