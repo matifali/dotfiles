@@ -700,28 +700,31 @@ install_coder_symlink() {
 }
 
 install_mise() {
+	local mise_bin
 	if ! command_exists mise; then
 		log_info "Installing mise"
 		curl -fsSL https://mise.run | sh || {
 			log_error "Failed to install mise"
 			return 1
 		}
+		mise_bin="$HOME/.local/bin/mise"
 	else
 		log_info "mise is already installed"
+		mise_bin="$(command -v mise)"
 	fi
 
 	# Install tools defined in the global config. Run from $HOME so a stray
 	# mise.toml in the dotfiles dir doesn't get picked up.
 	if [[ -f "$HOME/.config/mise/config.toml" ]]; then
 		log_info "Installing tools from mise global config"
-		(cd "$HOME" && "$HOME/.local/bin/mise" install) || {
+		(cd "$HOME" && "$mise_bin" install) || {
 			log_error "mise install failed"
 			return 1
 		}
 		# Generate ~/.config/mise/mise.lock so project configs with
 		# `locked = true` (e.g. coder/coder/mise.toml) can resolve the
 		# globally-defined tools without warnings.
-		(cd "$HOME" && "$HOME/.local/bin/mise" lock --global) || {
+		(cd "$HOME" && "$mise_bin" lock --global) || {
 			log_warning "mise lock --global failed (continuing)"
 		}
 	fi
