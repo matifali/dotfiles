@@ -715,9 +715,15 @@ install_mise() {
 
 	# Install tools defined in the global config. Run from $HOME so a stray
 	# mise.toml in the dotfiles dir doesn't get picked up.
+	#
+	# Unset GOROOT/GOBIN: some images (e.g. Coder dogfood) export them pinned
+	# to a specific Go install. If mise resolves a different Go version, the
+	# `go:` backend then builds with mismatched toolchain and stdlib
+	# ("compile: version X does not match go tool version Y"). mise sets the
+	# correct values itself.
 	if [[ -f "$HOME/.config/mise/config.toml" ]]; then
 		log_info "Installing tools from mise global config"
-		(cd "$HOME" && "$mise_bin" install) || {
+		(cd "$HOME" && unset GOROOT GOBIN && "$mise_bin" install) || {
 			log_error "mise install failed"
 			return 1
 		}
