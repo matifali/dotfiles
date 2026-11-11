@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# git gpg.ssh.program for Coder workspaces: fetch the user's Coder git SSH key into
+# tmpfs for the duration of one signature, so the private key never lands on persistent disk.
+# Only `-Y sign` needs the key; verify/find-principals pass straight through to ssh-keygen.
+set -euo pipefail
+
+[[ " $* " == *" -Y sign "* ]] || exec ssh-keygen "$@"
+
+d="$(mktemp -d /dev/shm/coder-sign.XXXXXX)" # 0700 on tmpfs (RAM); ponytail: needs /dev/shm, no fallback
+trap 'rm -rf "$d"' EXIT
+curl -fsS -H "Coder-Session-Token: $CODER_AGENT_TOKEN" \
+	"$CODER_AGENT_URL/api/v2/workspaceagents/me/gitsshkey" | jq -r .private_key >"$d/key"
+chmod 600 "$d/key"
+
+args=()
+while (($#)); do
+	if [[ "$1" == -f ]]; then args+=(-f "$d/key"); shift 2; else args+=("$1"); shift; fi
+done
+ssh-keygen "${args[@]}" # no exec: the EXIT trap must run to delete the key
