@@ -385,7 +385,20 @@ link_config_files() {
 	log_info "Linked .gitconfig"
 
 	# Setup SSH signing key for git
-	# On Linux with SSH agent forwarding, create public key from agent if not present
+	# In a Coder workspace, use the user's Coder git SSH key (works without a forwarded agent,
+	# so cloud agents can sign too). The same public key must be a GitHub *signing* key.
+	if [[ "$OSTYPE" == "linux-gnu"* ]] && [[ ! -f "$HOME/.ssh/id_ed25519" ]] &&
+		[[ -n "${CODER_AGENT_TOKEN:-}" && -n "${CODER_AGENT_URL:-}" ]] && command_exists curl && command_exists jq; then
+		if key_json="$(curl -fsS -H "Coder-Session-Token: $CODER_AGENT_TOKEN" "$CODER_AGENT_URL/api/v2/workspaceagents/me/gitsshkey")"; then
+			mkdir -p "$HOME/.ssh"
+			(umask 077 && jq -r .private_key <<<"$key_json" >"$HOME/.ssh/id_ed25519")
+			jq -r .public_key <<<"$key_json" >"$HOME/.ssh/id_ed25519.pub"
+			log_info "Wrote Coder git SSH key to ~/.ssh/id_ed25519 for git signing"
+		else
+			log_warning "Could not fetch Coder git SSH key; commits will fail to sign"
+		fi
+	fi
+	# Otherwise, on Linux with SSH agent forwarding, create public key from agent if not present
 	if [[ "$OSTYPE" == "linux-gnu"* ]] && [[ ! -f "$HOME/.ssh/id_ed25519.pub" ]]; then
 		if command_exists ssh-add && ssh-add -L &>/dev/null; then
 			mkdir -p "$HOME/.ssh"
