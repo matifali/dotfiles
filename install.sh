@@ -357,32 +357,41 @@ install_zsh_plugins() {
 	log_success "Zsh plugins installation completed"
 }
 
+# Write a small real file in $HOME that sources/includes the repo copy, instead of
+# symlinking it. Tools that append to ~/.zshrc, ~/.zprofile or ~/.gitconfig (gcloud,
+# codex, `git config --global`, ...) then change the stub, not the tracked file.
+# Idempotent: an existing stub for this repo path is left alone, so tool additions survive.
+write_stub() {
+	local target="$1" marker="$2" body="$3"
+	if [[ -f "$target" && ! -L "$target" ]] && grep -qF "$marker" "$target"; then
+		return 0
+	fi
+	if [[ -L "$target" ]]; then
+		rm "$target" || return 1
+	else
+		backup_file "$target" || return 1
+	fi
+	printf '%s\n%s\n' "$marker" "$body" >"$target"
+}
+
 link_config_files() {
 	log_info "Linking configuration files"
 
-	# Link .zshrc
-	backup_file "$HOME/.zshrc"
-	ln -sf "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc" || {
-		log_error "Failed to link .zshrc"
+	local marker="# dotfiles-stub: $DOTFILES_DIR (tools may append below; the repo stays clean)"
+	write_stub "$HOME/.zshrc" "$marker" "source \"$DOTFILES_DIR/.zshrc\"" || {
+		log_error "Failed to write .zshrc stub"
 		return 1
 	}
-	log_info "Linked .zshrc"
-
-	# Link .zprofile
-	backup_file "$HOME/.zprofile"
-	ln -sf "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile" || {
-		log_error "Failed to link .zprofile"
+	write_stub "$HOME/.zprofile" "$marker" "source \"$DOTFILES_DIR/.zprofile\"" || {
+		log_error "Failed to write .zprofile stub"
 		return 1
 	}
-	log_info "Linked .zprofile"
-
-	# Link .gitconfig
-	backup_file "$HOME/.gitconfig"
-	ln -sf "$DOTFILES_DIR/.gitconfig" "$HOME/.gitconfig" || {
-		log_error "Failed to link .gitconfig"
+	write_stub "$HOME/.gitconfig" "$marker" "[include]
+	path = $DOTFILES_DIR/.gitconfig" || {
+		log_error "Failed to write .gitconfig stub"
 		return 1
 	}
-	log_info "Linked .gitconfig"
+	log_info "Wrote .zshrc, .zprofile and .gitconfig stubs pointing at $DOTFILES_DIR"
 
 	# Setup SSH signing key for git
 	# In a Coder workspace, use the user's Coder git SSH key (works without a forwarded agent,
