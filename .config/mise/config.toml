@@ -21,4 +21,6 @@ jq = "latest"
 make = "latest"
 gh = "latest"
 "github:pranshuparmar/witr" = "latest"
-"github:tw93/mole" = { version = "latest", os = "macos" }
+sops = "latest"
+golangci-lint = "latest"
+pnpm = "latest"
