@@ -448,17 +448,6 @@ link_config_files() {
 	}
 	log_info "Linked mise config.toml"
 
-	# Link Zed settings if Zed is installed
-	if [[ -d "$HOME/.config/zed" ]]; then
-		ln -sf "$DOTFILES_DIR/.config/zed/settings.json" "$HOME/.config/zed/settings.json" || {
-			log_error "Failed to link Zed settings"
-			return 1
-		}
-		log_info "Linked Zed settings"
-	else
-		log_info "Zed is not installed, skipping Zed settings"
-	fi
-
 	# Link .mux/AGENTS.md for AI coding agents
 	mkdir -p "$HOME/.mux" || {
 		log_error "Failed to create .mux directory"
