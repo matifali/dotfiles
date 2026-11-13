@@ -346,14 +346,6 @@ install_zsh_plugins() {
 	install_zsh_plugin "zsh-completions" "https://github.com/zsh-users/zsh-completions"
 	install_zsh_plugin "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-syntax-highlighting.git"
 
-	# Nix-specific plugins
-	if command_exists nix; then
-		install_zsh_plugin "nix-zsh-completions" "https://github.com/nix-community/nix-zsh-completions.git"
-		install_zsh_plugin "nix-shell" "https://github.com/chisui/zsh-nix-shell.git"
-	else
-		log_info "Nix is not installed, skipping nix-zsh-completions"
-	fi
-
 	log_success "Zsh plugins installation completed"
 }
 
@@ -418,21 +410,6 @@ link_config_files() {
 		fi
 	fi
 
-	# Link Nix config if Nix is installed
-	if command_exists nix; then
-		mkdir -p "$HOME/.config/nix" || {
-			log_error "Failed to create .config/nix directory"
-			return 1
-		}
-		ln -sf "$DOTFILES_DIR/.config/nix/nix.conf" "$HOME/.config/nix/nix.conf" || {
-			log_error "Failed to link nix.conf"
-			return 1
-		}
-		log_info "Linked nix.conf"
-	else
-		log_info "Nix is not installed, skipping nix.conf"
-	fi
-
 	# Link mise global config (always — mise itself is installed by this script)
 	mkdir -p "$HOME/.config/mise" || {
 		log_error "Failed to create .config/mise directory"
@@ -488,12 +465,6 @@ configure_plugins() {
 	if [[ "$OSTYPE" == "darwin"* ]]; then
 		log_info "Adding macOS-specific plugins"
 		plugins+=(macos)
-	fi
-
-	# Add Nix plugins if Nix is installed
-	if command_exists nix; then
-		log_info "Adding Nix plugins"
-		plugins+=(nix-shell nix-zsh-completions)
 	fi
 
 	# Add GitHub CLI plugins if gh is installed

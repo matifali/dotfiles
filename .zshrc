@@ -5,6 +5,7 @@ export LC_ALL="en_US.UTF-8"
 export EDITOR='vim'
 
 # PATH for user-local binaries (mise's binary lives here)
+typeset -U path PATH
 export PATH="$HOME/.local/bin:$PATH"
 
 # Homebrew (macOS Apple Silicon, macOS Intel, or Linuxbrew)
@@ -31,9 +32,6 @@ ZSH_THEME="agnoster"
 # .zshrc doesn't need install-time mutation.
 plugins=(git zsh-autosuggestions zsh-completions zsh-syntax-highlighting)
 [[ "$OSTYPE" == "darwin"* ]] && plugins+=(brew macos)
-if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ] || [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-  plugins+=(nix-shell nix-zsh-completions)
-fi
 command -v gh >/dev/null 2>&1 && plugins+=(gh)
 command -v bun >/dev/null 2>&1 && plugins+=(bun)
 (command -v jfrog >/dev/null 2>&1 || command -v jf >/dev/null 2>&1) && plugins+=(jfrog)
@@ -52,18 +50,10 @@ if [ -d "/Applications/Tailscale.app/Contents/MacOS" ]; then
   alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 fi
 
-# Nix
-if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
-  . "$HOME/.nix-profile/etc/profile.d/nix.sh"
-fi
-if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-  . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-fi
-
 # Add GOPATH/bin to PATH for binaries from `go install`.
-# Placed after mise activation since mise provides the `go` binary.
-if command -v go >/dev/null 2>&1 && [ -d "$(go env GOPATH)/bin" ]; then
-  export PATH="$(go env GOPATH)/bin:$PATH"
+# Append so project tools managed by mise take precedence.
+if command -v go >/dev/null 2>&1; then
+  path+=("$(go env GOPATH)/bin")
 fi
 
 # Local secrets
