@@ -433,21 +433,6 @@ link_config_files() {
 		log_info "Nix is not installed, skipping nix.conf"
 	fi
 
-	# Link Ghostty config if Ghostty is installed
-	if command_exists ghostty || [[ -e "$HOME/Applications/Ghostty.app" ]]; then
-		mkdir -p "$HOME/.config/ghostty" || {
-			log_error "Failed to create .config/ghostty directory"
-			return 1
-		}
-		ln -sf "$DOTFILES_DIR/.config/ghostty/config" "$HOME/.config/ghostty/config" || {
-			log_error "Failed to link ghostty config"
-			return 1
-		}
-		log_info "Linked ghostty config"
-	else
-		log_info "Ghostty is not installed, skipping ghostty config"
-	fi
-
 	# Link mise global config (always — mise itself is installed by this script)
 	mkdir -p "$HOME/.config/mise" || {
 		log_error "Failed to create .config/mise directory"
@@ -617,35 +602,6 @@ install_nerd_font() {
 	log_success "${font_name}${font_type} installation completed"
 }
 
-install_ghostty_terminfo() {
-	log_info "Installing Ghostty terminfo (xterm-ghostty)"
-
-	if ! command_exists tic; then
-		log_warning "tic not found, skipping Ghostty terminfo installation"
-		return 0
-	fi
-
-	local terminfo_src="$DOTFILES_DIR/xterm-ghostty.terminfo"
-	if [[ ! -f "$terminfo_src" ]]; then
-		log_warning "xterm-ghostty.terminfo not found in dotfiles, skipping"
-		return 0
-	fi
-
-	# Check if already installed
-	if TERM=xterm-ghostty tput longname &>/dev/null; then
-		log_info "Ghostty terminfo already installed"
-		return 0
-	fi
-
-	mkdir -p "$HOME/.terminfo"
-	tic -x -o "$HOME/.terminfo" "$terminfo_src" || {
-		log_error "Failed to install Ghostty terminfo"
-		return 1
-	}
-
-	log_success "Ghostty terminfo installed"
-}
-
 install_coder_symlink() {
 	local coder_bin_dir="$HOME/.config/Code/User/globalStorage/coder.coder-remote/bin"
 	local coder_link="$HOME/.local/bin/coder"
@@ -770,7 +726,6 @@ main() {
 	configure_plugins || exit 1
 	install_coder_symlink || exit 1
 	install_nerd_font || exit 1
-	install_ghostty_terminfo || exit 1
 	install_mise || exit 1
 
 	log_success "Dotfiles installation completed successfully!"
