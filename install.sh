@@ -670,7 +670,11 @@ install_mise() {
 		# Generate ~/.config/mise/mise.lock so project configs with
 		# `locked = true` (e.g. coder/coder/mise.toml) can resolve the
 		# globally-defined tools without warnings.
-		(cd "$HOME" && "$mise_bin" lock --global) || {
+		#
+		# --global also locks the system config. On images that ship a
+		# root-owned /etc/mise (e.g. Coder dogfood) that write fails and
+		# takes our own lockfile down with it, so leave /etc/mise out.
+		(cd "$HOME" && MISE_IGNORED_CONFIG_PATHS=/etc/mise "$mise_bin" lock --global) || {
 			log_warning "mise lock --global failed (continuing)"
 		}
 	fi
