@@ -678,6 +678,36 @@ install_mise() {
 	log_success "mise installation completed"
 }
 
+install_rex() {
+	# macOS gets the server from the Rex app.
+	[[ "$OSTYPE" == "linux-gnu"* ]] || return 0
+
+	# Rex is optional, so failures here don't abort the rest of the setup.
+	local rex_bin="$HOME/.local/bin/rex"
+	if [[ -x "$rex_bin" ]]; then
+		log_info "Rex is already installed"
+	else
+		# --user: binary only into ~/.local/bin, no sudo. Preview channel to
+		# match the Mac client.
+		log_info "Installing Rex"
+		curl -fsSL https://pkgs.superlogical.com/rex/install.sh | sh -s -- --user --channel preview || {
+			log_warning "Failed to install Rex (continuing)"
+			return 0
+		}
+	fi
+
+	# A client connecting over SSH doesn't start a missing server, so make sure
+	# one is up: at boot via systemd where a user manager exists, otherwise
+	# start it now (idempotent; containers rerun this on every start).
+	if systemctl --user show-environment &>/dev/null; then
+		"$rex_bin" server install || log_warning "rex server install failed (continuing)"
+	else
+		"$rex_bin" server start || log_warning "rex server start failed (continuing)"
+	fi
+
+	log_success "Rex setup completed"
+}
+
 # Main execution
 main() {
 	log_info "Starting dotfiles installation"
@@ -698,6 +728,7 @@ main() {
 	install_coder_symlink || exit 1
 	install_nerd_font || exit 1
 	install_mise || exit 1
+	install_rex || exit 1
 
 	log_success "Dotfiles installation completed successfully!"
 	log_info "Please restart your terminal or run 'source ~/.zshrc' to apply changes."
