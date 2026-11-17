@@ -663,9 +663,12 @@ install_mise() {
 	# correct values itself.
 	if [[ -f "$HOME/.config/mise/config.toml" ]]; then
 		log_info "Installing tools from mise global config"
+		#
+		# Not fatal: on Coder dogfood this races the template's chown of
+		# /opt/mise at startup and can fail with permission denied even though
+		# every tool is installed. The rest of the setup should still finish.
 		(cd "$HOME" && unset GOROOT GOBIN && "$mise_bin" install) || {
-			log_error "mise install failed"
-			return 1
+			log_warning "mise install failed (continuing)"
 		}
 		# Generate ~/.config/mise/mise.lock so project configs with
 		# `locked = true` (e.g. coder/coder/mise.toml) can resolve the
