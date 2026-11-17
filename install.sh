@@ -392,7 +392,9 @@ link_config_files() {
 	# be a GitHub *signing* key.
 	if [[ "$OSTYPE" == "linux-gnu"* ]] &&
 		[[ -n "${CODER_AGENT_TOKEN:-}" && -n "${CODER_AGENT_URL:-}" ]] && command_exists curl && command_exists jq; then
-		if key_json="$(curl -fsS -H "Coder-Session-Token: $CODER_AGENT_TOKEN" "$CODER_AGENT_URL/api/v2/workspaceagents/me/gitsshkey")"; then
+		# Header via stdin (printf is a builtin), so the token never shows up in the process list.
+		if key_json="$(printf 'Coder-Session-Token: %s\n' "$CODER_AGENT_TOKEN" |
+			curl -fsS -H @- "$CODER_AGENT_URL/api/v2/workspaceagents/me/gitsshkey")"; then
 			mkdir -p "$HOME/.ssh"
 			jq -r .public_key <<<"$key_json" >"$HOME/.ssh/id_ed25519.pub"
 			git config --global gpg.ssh.program "$DOTFILES_DIR/bin/coder-ssh-sign"
@@ -410,16 +412,22 @@ link_config_files() {
 		fi
 	fi
 
-	# Link mise global config (always — mise itself is installed by this script)
-	mkdir -p "$HOME/.config/mise" || {
-		log_error "Failed to create .config/mise directory"
+	# Link mise global config (always — mise itself is installed by this script).
+	# It goes into conf.d, not config.toml: `mise use -g` and `mise set -g` write
+	# to config.toml, so that has to stay a local file outside this public repo.
+	mkdir -p "$HOME/.config/mise/conf.d" || {
+		log_error "Failed to create .config/mise/conf.d directory"
 		return 1
 	}
-	ln -sf "$DOTFILES_DIR/.config/mise/config.toml" "$HOME/.config/mise/config.toml" || {
-		log_error "Failed to link mise config.toml"
+	# Drop the config.toml symlink earlier versions of this script created.
+	if [[ -L "$HOME/.config/mise/config.toml" ]]; then
+		rm "$HOME/.config/mise/config.toml" || return 1
+	fi
+	ln -sf "$DOTFILES_DIR/.config/mise/config.toml" "$HOME/.config/mise/conf.d/dotfiles.toml" || {
+		log_error "Failed to link mise config"
 		return 1
 	}
-	log_info "Linked mise config.toml"
+	log_info "Linked mise config into conf.d/dotfiles.toml"
 
 	# Link .mux/AGENTS.md for AI coding agents
 	mkdir -p "$HOME/.mux" || {
@@ -661,7 +669,7 @@ install_mise() {
 	# `go:` backend then builds with mismatched toolchain and stdlib
 	# ("compile: version X does not match go tool version Y"). mise sets the
 	# correct values itself.
-	if [[ -f "$HOME/.config/mise/config.toml" ]]; then
+	if [[ -f "$HOME/.config/mise/conf.d/dotfiles.toml" ]]; then
 		log_info "Installing tools from mise global config"
 		#
 		# Not fatal: on Coder dogfood this races the template's chown of

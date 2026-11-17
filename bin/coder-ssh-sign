@@ -8,8 +8,9 @@ set -euo pipefail
 
 d="$(mktemp -d /dev/shm/coder-sign.XXXXXX)" # 0700 on tmpfs (RAM); ponytail: needs /dev/shm, no fallback
 trap 'rm -rf "$d"' EXIT
-curl -fsS -H "Coder-Session-Token: $CODER_AGENT_TOKEN" \
-	"$CODER_AGENT_URL/api/v2/workspaceagents/me/gitsshkey" | jq -r .private_key >"$d/key"
+# Header via stdin (printf is a builtin), so the token never shows up in the process list.
+printf 'Coder-Session-Token: %s\n' "$CODER_AGENT_TOKEN" |
+	curl -fsS -H @- "$CODER_AGENT_URL/api/v2/workspaceagents/me/gitsshkey" | jq -r .private_key >"$d/key"
 chmod 600 "$d/key"
 
 args=()

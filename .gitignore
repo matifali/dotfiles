@@ -1,0 +1,21 @@
+# This repo is public. Ignore everything at the top level by default, so a stray
+# .env, key or backup dropped here is never picked up by `git add -A`.
+# To track something new, un-ignore it below.
+/*
+!/.gitignore
+!/.config/
+!/.gitconfig
+!/.mux/
+!/.zprofile
+!/.zshrc
+!/bin/
+!/install.sh
+
+# Never track these, wherever they are.
+.env*
+.secrets*
+*.pem
+*.key
+id_*
+*.bak*
+mise.lock
