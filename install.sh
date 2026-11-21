@@ -385,6 +385,14 @@ link_config_files() {
 	}
 	log_info "Wrote .zshrc, .zprofile and .gitconfig stubs pointing at $DOTFILES_DIR"
 
+	# Coder workspaces (CODER is set there) commit as the work identity. This lands in the
+	# ~/.gitconfig stub below the include, so it overrides the tracked [user] without editing it.
+	if [[ -n "${CODER:-}" ]]; then
+		git config --global user.name "Atif Ali"
+		git config --global user.email "atif@coder.com"
+		log_info "Git identity set to Atif Ali <atif@coder.com> (Coder workspace)"
+	fi
+
 	# Setup SSH signing key for git
 	# In a Coder workspace, sign with the user's Coder git SSH key (works without a forwarded
 	# agent, so cloud agents can sign too). bin/coder-ssh-sign fetches the private key into
