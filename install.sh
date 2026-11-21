@@ -349,28 +349,36 @@ install_zsh_plugins() {
 	log_success "Zsh plugins installation completed"
 }
 
-# Remove what older versions of this script wrote, so `mise dot apply` doesn't
-# source the repo twice: a symlink in place of the home file, or a stub block
-# (marker line plus its body lines). Lines tools appended to a stub are kept.
-# ponytail: one-time migration, delete once every machine has run mise dot apply.
-remove_legacy_stub() {
+# Get a home file ready for the line `mise dot apply` prepends to it:
+# - already managed by mise: leave it, so lines tools appended survive.
+# - a symlink or stub block (marker plus body lines) from older versions of this
+#   script: remove it, so the repo isn't sourced twice. Appended lines are kept.
+#   ponytail: one-time migration, drop this branch once every machine has run it.
+# - anything else (the Oh My Zsh template .zshrc, an image's /etc/skel files):
+#   back it up, or its settings would load on top of the repo's.
+prepare_home_file() {
 	local target="$1" body_lines="$2"
 	if [[ -L "$target" ]]; then
 		rm "$target"
 		return
 	fi
-	[[ -f "$target" ]] && grep -q '^# dotfiles-stub: ' "$target" || return 0
-	awk -v n="$body_lines" '/^# dotfiles-stub: /{skip=n+1} skip{skip--;next} 1' "$target" >"$target.tmp" &&
-		mv "$target.tmp" "$target"
+	[[ -f "$target" ]] || return 0
+	grep -q 'conf\.d/dotfiles/' "$target" && return 0
+	if grep -q '^# dotfiles-stub: ' "$target"; then
+		awk -v n="$body_lines" '/^# dotfiles-stub: /{skip=n+1} skip{skip--;next} 1' "$target" >"$target.tmp" &&
+			mv "$target.tmp" "$target"
+		return
+	fi
+	backup_file "$target"
 }
 
 link_config_files() {
 	log_info "Linking configuration files"
 
-	remove_legacy_stub "$HOME/.zshrc" 1 &&
-		remove_legacy_stub "$HOME/.zprofile" 1 &&
-		remove_legacy_stub "$HOME/.gitconfig" 2 || {
-		log_error "Failed to remove legacy dotfile stubs"
+	prepare_home_file "$HOME/.zshrc" 1 &&
+		prepare_home_file "$HOME/.zprofile" 1 &&
+		prepare_home_file "$HOME/.gitconfig" 2 || {
+		log_error "Failed to prepare home dotfiles"
 		return 1
 	}
 
@@ -650,8 +658,8 @@ install_mise() {
 		mise_bin="$(command -v mise)"
 	fi
 
-	# Install tools defined in the global config. Run from $HOME so a stray
-	# mise.toml in the dotfiles dir doesn't get picked up.
+	# Install tools defined in the global config. Run from $HOME so the mise.toml
+	# of whatever project the script was started from is not picked up.
 	#
 	# Unset GOROOT/GOBIN: some images (e.g. Coder dogfood) export them pinned
 	# to a specific Go install. If mise resolves a different Go version, the
