@@ -349,41 +349,50 @@ install_zsh_plugins() {
 	log_success "Zsh plugins installation completed"
 }
 
-# Write a small real file in $HOME that sources/includes the repo copy, instead of
-# symlinking it. Tools that append to ~/.zshrc, ~/.zprofile or ~/.gitconfig (gcloud,
-# codex, `git config --global`, ...) then change the stub, not the tracked file.
-# Idempotent: an existing stub for this repo path is left alone, so tool additions survive.
-write_stub() {
-	local target="$1" marker="$2" body="$3"
-	if [[ -f "$target" && ! -L "$target" ]] && grep -qF "$marker" "$target"; then
-		return 0
-	fi
+# Remove what older versions of this script wrote, so `mise dot apply` doesn't
+# source the repo twice: a symlink in place of the home file, or a stub block
+# (marker line plus its body lines). Lines tools appended to a stub are kept.
+# ponytail: one-time migration, delete once every machine has run mise dot apply.
+remove_legacy_stub() {
+	local target="$1" body_lines="$2"
 	if [[ -L "$target" ]]; then
-		rm "$target" || return 1
-	else
-		backup_file "$target" || return 1
+		rm "$target"
+		return
 	fi
-	printf '%s\n%s\n' "$marker" "$body" >"$target"
+	[[ -f "$target" ]] && grep -q '^# dotfiles-stub: ' "$target" || return 0
+	awk -v n="$body_lines" '/^# dotfiles-stub: /{skip=n+1} skip{skip--;next} 1' "$target" >"$target.tmp" &&
+		mv "$target.tmp" "$target"
 }
 
 link_config_files() {
 	log_info "Linking configuration files"
 
-	local marker="# dotfiles-stub: $DOTFILES_DIR (tools may append below; the repo stays clean)"
-	write_stub "$HOME/.zshrc" "$marker" "source \"$DOTFILES_DIR/.zshrc\"" || {
-		log_error "Failed to write .zshrc stub"
+	remove_legacy_stub "$HOME/.zshrc" 1 &&
+		remove_legacy_stub "$HOME/.zprofile" 1 &&
+		remove_legacy_stub "$HOME/.gitconfig" 2 || {
+		log_error "Failed to remove legacy dotfile stubs"
 		return 1
 	}
-	write_stub "$HOME/.zprofile" "$marker" "source \"$DOTFILES_DIR/.zprofile\"" || {
-		log_error "Failed to write .zprofile stub"
+
+	# Link the whole repo as a mise conf.d folder. mise then loads mise.toml
+	# (global tools and the [dotfiles] entries) from it, and resolves dotfile
+	# sources through ~/.config/mise/conf.d/dotfiles on every machine.
+	# It goes into conf.d, not config.toml: `mise use -g` and `mise set -g` write
+	# to config.toml, so that has to stay a local file outside this public repo.
+	mkdir -p "$HOME/.config/mise/conf.d" || {
+		log_error "Failed to create .config/mise/conf.d directory"
 		return 1
 	}
-	write_stub "$HOME/.gitconfig" "$marker" "[include]
-	path = $DOTFILES_DIR/.gitconfig" || {
-		log_error "Failed to write .gitconfig stub"
+	# Drop links earlier versions of this script created.
+	if [[ -L "$HOME/.config/mise/config.toml" ]]; then
+		rm "$HOME/.config/mise/config.toml" || return 1
+	fi
+	rm -f "$HOME/.config/mise/conf.d/dotfiles.toml"
+	ln -sfn "$DOTFILES_DIR" "$HOME/.config/mise/conf.d/dotfiles" || {
+		log_error "Failed to link mise config"
 		return 1
 	}
-	log_info "Wrote .zshrc, .zprofile and .gitconfig stubs pointing at $DOTFILES_DIR"
+	log_info "Linked $DOTFILES_DIR to ~/.config/mise/conf.d/dotfiles"
 
 	# Coder workspaces (CODER is set there) commit as the work identity. This lands in the
 	# ~/.gitconfig stub below the include, so it overrides the tracked [user] without editing it.
@@ -419,34 +428,6 @@ link_config_files() {
 			log_info "Created SSH public key from forwarded agent for git signing"
 		fi
 	fi
-
-	# Link mise global config (always — mise itself is installed by this script).
-	# It goes into conf.d, not config.toml: `mise use -g` and `mise set -g` write
-	# to config.toml, so that has to stay a local file outside this public repo.
-	mkdir -p "$HOME/.config/mise/conf.d" || {
-		log_error "Failed to create .config/mise/conf.d directory"
-		return 1
-	}
-	# Drop the config.toml symlink earlier versions of this script created.
-	if [[ -L "$HOME/.config/mise/config.toml" ]]; then
-		rm "$HOME/.config/mise/config.toml" || return 1
-	fi
-	ln -sf "$DOTFILES_DIR/.config/mise/config.toml" "$HOME/.config/mise/conf.d/dotfiles.toml" || {
-		log_error "Failed to link mise config"
-		return 1
-	}
-	log_info "Linked mise config into conf.d/dotfiles.toml"
-
-	# Link .mux/AGENTS.md for AI coding agents
-	mkdir -p "$HOME/.mux" || {
-		log_error "Failed to create .mux directory"
-		return 1
-	}
-	ln -sf "$DOTFILES_DIR/.mux/AGENTS.md" "$HOME/.mux/AGENTS.md" || {
-		log_error "Failed to link .mux/AGENTS.md"
-		return 1
-	}
-	log_info "Linked .mux/AGENTS.md"
 
 	log_success "Configuration files linked successfully"
 }
@@ -677,7 +658,14 @@ install_mise() {
 	# `go:` backend then builds with mismatched toolchain and stdlib
 	# ("compile: version X does not match go tool version Y"). mise sets the
 	# correct values itself.
-	if [[ -f "$HOME/.config/mise/conf.d/dotfiles.toml" ]]; then
+	# Deploy the [dotfiles] entries from mise.toml (shell stubs, .gitconfig
+	# include, AGENTS.md). Fatal: without them the shell has no config.
+	(cd "$HOME" && "$mise_bin" dot apply --yes) || {
+		log_error "mise dot apply failed (an old mise without 'mise dot'? run: mise self-update)"
+		return 1
+	}
+
+	if [[ -f "$HOME/.config/mise/conf.d/dotfiles/mise.toml" ]]; then
 		log_info "Installing tools from mise global config"
 		#
 		# Not fatal: on Coder dogfood this races the template's chown of

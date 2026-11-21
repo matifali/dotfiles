@@ -10,6 +10,7 @@
 !/.zshrc
 !/bin/
 !/install.sh
+!/mise.toml
 
 # Never track these, wherever they are.
 .env*

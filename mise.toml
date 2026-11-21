@@ -1,0 +1,41 @@
+# Global tools managed by mise.
+# Docs: https://mise.jdx.dev/configuration.html
+#
+# Project-specific tool versions live in each repo's mise.toml and take
+# precedence over these globals.
+
+[settings]
+# Maintain a per-machine lockfile at ~/.config/mise/mise.lock so the
+# global tools are resolvable when entering a project that sets
+# `locked = true` (e.g. coder/coder/mise.toml). The lockfile is not
+# committed; each machine generates its own via `mise install`.
+lockfile = true
+
+[tools]
+go = "latest"
+node = "lts"
+bun = "latest"
+shfmt = "latest"
+terraform = "latest"
+jq = "latest"
+make = "latest"
+gh = "latest"
+"github:pranshuparmar/witr" = "latest"
+sops = "latest"
+golangci-lint = "latest"
+pnpm = "latest"
+
+# Dotfiles, deployed by `mise dot apply` (https://mise.jdx.dev/dotfiles.html).
+# install.sh links this repo to ~/.config/mise/conf.d/dotfiles, so that path
+# reaches the repo on every machine whatever the clone location.
+#
+# ~/.zshrc, ~/.zprofile and ~/.gitconfig stay real files with one managed line
+# that sources/includes the repo copy. Tools that append to them (gcloud, codex,
+# `git config --global`, ...) then change the home file, never the repo.
+# Prepended so the work [user] that `git config --global` adds below the
+# include overrides the tracked one.
+[dotfiles]
+"~/.zshrc/dotfiles" = { line = "source ~/.config/mise/conf.d/dotfiles/.zshrc", position = "prepend" }
+"~/.zprofile/dotfiles" = { line = "source ~/.config/mise/conf.d/dotfiles/.zprofile", position = "prepend" }
+"~/.gitconfig/dotfiles" = { line = "[include] path = ~/.config/mise/conf.d/dotfiles/.gitconfig", position = "prepend" }
+"~/.mux/AGENTS.md" = { source = ".mux/AGENTS.md" }
