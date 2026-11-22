@@ -10,7 +10,7 @@ export HOMEBREW_NO_AUTO_UPDATE=1
 export CI=true
 
 # Global variables
-DOTFILES_DIR="$(realpath "$(dirname "$0")")"
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly DOTFILES_DIR
 readonly LOCALE="en_US.UTF-8"
 TEMP_FILES=()
@@ -45,7 +45,9 @@ cleanup() {
 	if [[ ${#TEMP_FILES[@]} -gt 0 ]]; then
 		log_info "Cleaning up temporary files..."
 		for temp_file in "${TEMP_FILES[@]}"; do
-			[[ -f "$temp_file" ]] && rm -f "$temp_file"
+			if [[ -e "$temp_file" ]]; then
+				rm -rf "$temp_file"
+			fi
 		done
 	fi
 
@@ -69,14 +71,15 @@ command_exists() {
 safe_curl() {
 	local url="$1"
 	local output="$2"
+	local max_time="${3:-30}"
 	local max_retries=3
 	local retry=0
 
 	while [[ $retry -lt $max_retries ]]; do
-		if curl -fsSL --connect-timeout 10 --max-time 30 "$url" -o "$output"; then
+		if curl -fsSL --connect-timeout 10 --max-time "$max_time" "$url" -o "$output"; then
 			return 0
 		fi
-		((retry++))
+		retry=$((retry + 1))
 		log_warning "Download failed (attempt $retry/$max_retries). Retrying..."
 		sleep 2
 	done
@@ -95,7 +98,7 @@ safe_git_clone() {
 		if git clone "$repo" "$destination"; then
 			return 0
 		fi
-		((retry++))
+		retry=$((retry + 1))
 		log_warning "Git clone failed (attempt $retry/$max_retries). Retrying..."
 		# Clean up partial clone
 		[[ -d "$destination" ]] && rm -rf "$destination"
@@ -108,22 +111,11 @@ safe_git_clone() {
 
 safe_git_pull() {
 	local directory="$1"
-	local current_dir
-	current_dir="$(pwd)"
 
-	if ! cd "$directory"; then
-		log_error "Failed to change directory to $directory"
-		return 1
-	fi
-
-	if ! git pull; then
+	if ! git -C "$directory" pull --ff-only --quiet; then
 		log_error "Failed to update repository in $directory"
-		cd "$current_dir"
 		return 1
 	fi
-
-	cd "$current_dir"
-	return 0
 }
 
 validate_dotfiles_dir() {
@@ -163,40 +155,16 @@ setup_locale() {
 	log_info "Setting up locale: $LOCALE"
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
-		# On macOS, check if locale is already set via multiple methods
-		local current_locale_global current_locale_lang current_locale_lc_all
-		current_locale_global=$(defaults read -g AppleLocale 2>/dev/null || echo "")
-		current_locale_lang="${LANG:-}"
-		current_locale_lc_all="${LC_ALL:-}"
-
-		# Check if any of the locale settings match what we want
-		if [[ "$current_locale_global" == "$LOCALE" ]] ||
-			[[ "$current_locale_lang" == "$LOCALE" ]] ||
-			[[ "$current_locale_lc_all" == "$LOCALE" ]] ||
-			[[ "$(locale | grep LANG= | cut -d= -f2 | tr -d '"')" == "$LOCALE" ]]; then
-			log_info "Locale $LOCALE is already configured"
-			log_success "Locale setup completed"
-			return 0
-		fi
-
-		# Check if locale is available in the system
-		if locale -a 2>/dev/null | grep -q "$LOCALE"; then
-			log_info "Locale $LOCALE is available but not set as default"
-			# Try to set without sudo first
-			if defaults write -g AppleLocale -string "$LOCALE" 2>/dev/null; then
-				log_info "Successfully set locale without sudo"
-			else
-				log_info "Setting locale to $LOCALE (requires sudo)"
-				sudo defaults write -g AppleLocale -string "$LOCALE" || {
-					log_warning "Failed to set system locale, but continuing (this is optional)"
-				}
-			fi
-		else
-			log_info "Locale $LOCALE may not be available on this macOS system, but continuing (this is optional)"
-		fi
+		# macOS needs no system change: .zshrc exports LANG/LC_ALL. Don't write
+		# AppleLocale, it takes values like en_US (not en_US.UTF-8) and would
+		# clobber the user's language/region settings.
+		log_info "macOS: locale is set per shell by .zshrc, nothing to do"
 	elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-		# On Linux, check if locale is available
-		if locale -a | grep -qx "$LOCALE"; then
+		# `locale -a` lists en_US.utf8, not en_US.UTF-8, so compare case- and
+		# dash-insensitively or locale-gen would rerun on every install.
+		local wanted
+		wanted="$(printf '%s' "$LOCALE" | tr '[:upper:]' '[:lower:]' | tr -d '-')"
+		if locale -a | tr '[:upper:]' '[:lower:]' | tr -d '-' | grep -qxF "$wanted"; then
 			log_info "Locale $LOCALE already available"
 			log_success "Locale setup completed"
 			return 0
@@ -330,11 +298,10 @@ install_zsh_plugin() {
 			return 1
 		}
 	else
+		# An update failing (offline, local edits) must not abort the install:
+		# the existing checkout still works.
 		log_info "Updating $plugin_name"
-		safe_git_pull "$plugin_dir" || {
-			log_error "Failed to update $plugin_name"
-			return 1
-		}
+		safe_git_pull "$plugin_dir" || log_warning "Could not update $plugin_name (continuing with existing copy)"
 	fi
 }
 
@@ -415,9 +382,18 @@ link_config_files() {
 	if [[ "$OSTYPE" == "linux-gnu"* ]] && [[ ! -f "$HOME/.ssh/id_ed25519.pub" ]]; then
 		if command_exists ssh-add && ssh-add -L &>/dev/null; then
 			mkdir -p "$HOME/.ssh"
-			ssh-add -L | head -1 > "$HOME/.ssh/id_ed25519.pub"
+			ssh-add -L | head -1 >"$HOME/.ssh/id_ed25519.pub"
 			log_info "Created SSH public key from forwarded agent for git signing"
 		fi
+	fi
+
+	# On macOS with the 1Password app, sign via its SSH agent (op-ssh-sign). Like the Coder
+	# identity above, this lands in the ~/.gitconfig stub, not the tracked .gitconfig. The
+	# public key must still be saved to ~/.ssh/id_ed25519.pub (see configure_git_signing_hint).
+	local op_sign="/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+	if [[ "$OSTYPE" == "darwin"* && -x "$op_sign" ]]; then
+		git config --global gpg.ssh.program "$op_sign"
+		log_info "Git signing uses 1Password (op-ssh-sign)"
 	fi
 
 	# Link mise global config (always — mise itself is installed by this script).
@@ -455,7 +431,14 @@ configure_git_signing_hint() {
 	local signing_key="$HOME/.ssh/id_ed25519"
 	local signing_pub="$HOME/.ssh/id_ed25519.pub"
 
-	if [[ -f "$signing_key" && -f "$signing_pub" ]]; then
+	if [[ "$(git config --global --get gpg.ssh.program 2>/dev/null)" == *op-ssh-sign ]]; then
+		# 1Password holds the private key; only the public key is needed on disk.
+		if [[ -f "$signing_pub" ]]; then
+			log_info "Git signing via 1Password. Ensure the SSH agent is enabled in 1Password > Settings > Developer."
+		else
+			log_warning "Git signing via 1Password, but $signing_pub is missing: save your SSH public key there (1Password > the key > copy Public Key), or commits will fail to sign"
+		fi
+	elif [[ -f "$signing_key" && -f "$signing_pub" ]]; then
 		if [[ "$OSTYPE" == "darwin"* ]]; then
 			log_info "Git SSH signing key detected. If needed, load it with: ssh-add --apple-use-keychain $signing_key"
 		else
@@ -466,74 +449,48 @@ configure_git_signing_hint() {
 	fi
 }
 
-configure_plugins() {
-	log_info "Configuring plugins"
-	local plugins_file="$HOME/.zsh_plugins.local"
-	local plugins=()
-
-	# Add Homebrew plugin only when Homebrew is installed.
-	if command_exists brew; then
-		log_info "Adding Homebrew plugin"
-		plugins+=(brew)
-	fi
-
-	# Add macOS-specific plugins
-	if [[ "$OSTYPE" == "darwin"* ]]; then
-		log_info "Adding macOS-specific plugins"
-		plugins+=(macos)
-	fi
-
-	# Add GitHub CLI plugins if gh is installed
+install_gh_extensions() {
+	# Oh My Zsh plugin selection happens dynamically in .zshrc, so the only
+	# install-time work left here is the gh extension itself. `gh` is normally
+	# provided by mise, which may not be activated in this script's shell, so
+	# fall back to `mise exec` (and to the known install path on a first run).
+	local gh_cmd=()
 	if command_exists gh; then
-		log_info "Adding GitHub CLI plugins and extensions"
-		plugins+=(gh)
-
-		# Install/upgrade gh extensions with --force to ensure latest versions
-		local extensions=("dlvhdr/gh-dash")
-		for extension in "${extensions[@]}"; do
-			local extension_name="${extension##*/}"         # Extract name after last slash
-			local gh_extension_name="${extension_name#gh-}" # Remove gh- prefix if present
-
-			log_info "Installing/updating gh extension: $extension"
-			if gh extension install "$extension" --force >/dev/null 2>&1; then
-				log_info "gh extension $gh_extension_name installed/updated successfully"
-			else
-				log_info "Skipping gh extension $gh_extension_name (may require authentication or network access)"
-			fi
-		done
+		gh_cmd=(gh)
+	else
+		local mise_bin=""
+		if command_exists mise; then
+			mise_bin="$(command -v mise)"
+		elif [[ -x "$HOME/.local/bin/mise" ]]; then
+			mise_bin="$HOME/.local/bin/mise"
+		fi
+		if [[ -n "$mise_bin" ]] && "$mise_bin" which gh >/dev/null 2>&1; then
+			gh_cmd=("$mise_bin" exec -- gh)
+		else
+			log_info "gh not available; skipping gh extension install"
+			return 0
+		fi
 	fi
 
-	# Add other tool-specific plugins
-	if command_exists bun; then
-		log_info "Adding Bun plugin"
-		plugins+=(bun)
-	fi
-
-	if command_exists jfrog || command_exists jf; then
-		log_info "Adding JFrog plugin"
-		plugins+=(jfrog)
-	fi
-
-	if [[ ${#plugins[@]} -eq 0 ]]; then
-		rm -f "$plugins_file"
-		log_info "No machine-specific plugins to configure"
-		log_success "Plugin configuration completed"
-		return 0
-	fi
-
-	cat >"$plugins_file" <<EOF
-# Generated by install.sh. Safe to regenerate.
-ZSH_EXTRA_PLUGINS=(${plugins[*]})
-EOF
-
-	log_success "Plugin configuration completed"
+	log_info "Installing/updating gh extensions"
+	local extensions=("dlvhdr/gh-dash")
+	local extension extension_name
+	for extension in "${extensions[@]}"; do
+		extension_name="${extension##*/}"
+		extension_name="${extension_name#gh-}"
+		if "${gh_cmd[@]}" extension install "$extension" --force >/dev/null 2>&1; then
+			log_info "gh extension $extension_name installed/updated"
+		else
+			log_info "Skipping gh extension $extension_name (may require auth or network)"
+		fi
+	done
 }
 
 install_nerd_font() {
-	font_name="JetBrainsMono"
-	font_type="NerdFontMono"
-	version="3.4.0"
-	log_info "Installing ${font_name}${font_type}"
+	local font_name="JetBrainsMono"
+	local font_type="NerdFontMono"
+	local version="3.5.1"
+	local version_file="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/${font_name}.version"
 
 	local destination
 	if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -550,9 +507,10 @@ install_nerd_font() {
 		return 0
 	fi
 
-	# Check if font is already installed
-	if [[ -f "${destination}/${font_name}${font_type}-Regular.ttf" ]]; then
-		log_info "${font_name}${font_type} is already installed"
+	# Skip only when the installed version matches; bumping $version upgrades.
+	if [[ -f "${destination}/${font_name}${font_type}-Regular.ttf" ]] &&
+		[[ "$(cat "$version_file" 2>/dev/null)" == "$version" ]]; then
+		log_info "${font_name}${font_type} ${version} is already installed"
 		return 0
 	fi
 
@@ -562,22 +520,30 @@ install_nerd_font() {
 		return 1
 	}
 
-	# Clean up old fonts
-	rm -f "$destination/${font_name}${font_type}-"*.ttf
+	# Download and install font. Use a private temp dir: curl cannot create the
+	# parent directory of -o, and a shared /tmp/<version> path may not exist.
+	local temp_dir temp_zip
+	temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/${font_name}.XXXXXX")" || {
+		log_error "Failed to create temporary directory for ${font_name}"
+		return 1
+	}
+	TEMP_FILES+=("$temp_dir")
+	temp_zip="$temp_dir/${font_name}.zip"
 
-	# Download and install font
-	local temp_zip="/tmp/${version}/${font_name}.zip"
-	TEMP_FILES+=("$temp_zip")
-
-	safe_curl "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/${font_name}.zip" "$temp_zip" || {
+	# This release is ~130 MB, so the default 30s cap is far too short.
+	safe_curl "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/${font_name}.zip" "$temp_zip" 300 || {
 		log_error "Failed to download ${font_name}"
 		return 1
 	}
 
+	# Remove old fonts only now that the download succeeded.
+	rm -f "$destination/${font_name}${font_type}-"*.ttf
 	unzip -o -q "$temp_zip" -d "$destination" '*.ttf' || {
 		log_error "Failed to extract ${font_name}"
 		return 1
 	}
+
+	mkdir -p "$(dirname "$version_file")" && printf '%s\n' "$version" >"$version_file"
 
 	# Update font cache on Linux
 	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
@@ -601,31 +567,21 @@ install_coder_symlink() {
 	fi
 
 	case "$(uname -m)" in
-		arm64 | aarch64)
-			coder_arch="arm64"
-			;;
-		x86_64 | amd64)
-			coder_arch="amd64"
-			;;
+	arm64 | aarch64) coder_arch="arm64" ;;
+	x86_64 | amd64) coder_arch="amd64" ;;
 	esac
 
-	if [[ "$(uname)" == "Darwin" ]]; then
-		if [[ -n "$coder_arch" && -f "$coder_bin_dir/bin/coder-darwin-$coder_arch" ]]; then
-			candidate="$coder_bin_dir/bin/coder-darwin-$coder_arch"
-		elif [[ -f "$coder_bin_dir/bin/coder-darwin-arm64" ]]; then
-			candidate="$coder_bin_dir/bin/coder-darwin-arm64"
-		elif [[ -f "$coder_bin_dir/bin/coder-darwin-amd64" ]]; then
-			candidate="$coder_bin_dir/bin/coder-darwin-amd64"
+	local coder_os="linux"
+	[[ "$(uname)" == "Darwin" ]] && coder_os="darwin"
+
+	# Prefer the host architecture, then fall back to any available build.
+	local arch
+	for arch in "$coder_arch" arm64 amd64; do
+		if [[ -n "$arch" && -f "$coder_bin_dir/bin/coder-$coder_os-$arch" ]]; then
+			candidate="$coder_bin_dir/bin/coder-$coder_os-$arch"
+			break
 		fi
-	else
-		if [[ -n "$coder_arch" && -f "$coder_bin_dir/bin/coder-linux-$coder_arch" ]]; then
-			candidate="$coder_bin_dir/bin/coder-linux-$coder_arch"
-		elif [[ -f "$coder_bin_dir/bin/coder-linux-arm64" ]]; then
-			candidate="$coder_bin_dir/bin/coder-linux-arm64"
-		elif [[ -f "$coder_bin_dir/bin/coder-linux-amd64" ]]; then
-			candidate="$coder_bin_dir/bin/coder-linux-amd64"
-		fi
-	fi
+	done
 
 	if [[ -z "$candidate" ]]; then
 		log_info "No matching coder binary found, skipping coder symlink"
@@ -747,10 +703,10 @@ main() {
 	install_zsh_plugins || exit 1
 	link_config_files || exit 1
 	configure_git_signing_hint || exit 1
-	configure_plugins || exit 1
 	install_coder_symlink || exit 1
-	install_nerd_font || exit 1
+	install_nerd_font || log_warning "Font installation failed (continuing; it is cosmetic)"
 	install_mise || exit 1
+	install_gh_extensions || exit 1
 	install_rex || exit 1
 
 	log_success "Dotfiles installation completed successfully!"
