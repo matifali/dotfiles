@@ -360,40 +360,70 @@ link_config_files() {
 		log_info "Git identity set to Atif Ali <atif@coder.com> (Coder workspace)"
 	fi
 
-	# Setup SSH signing key for git
-	# In a Coder workspace, sign with the user's Coder git SSH key (works without a forwarded
-	# agent, so cloud agents can sign too). bin/coder-ssh-sign fetches the private key into
-	# tmpfs per signature, so only the public key is written to disk. The same public key must
-	# be a GitHub *signing* key.
+	# Configure one usable SSH signer on this machine. The tracked .gitconfig enables
+	# signing by default, so every machine must explicitly disable it when no signer exists.
+	local signing_configured=false
+
+	# Coder workspaces: fetch the private key only for each signature and keep it in tmpfs.
 	if [[ "$OSTYPE" == "linux-gnu"* ]] &&
 		[[ -n "${CODER_AGENT_TOKEN:-}" && -n "${CODER_AGENT_URL:-}" ]] && command_exists curl && command_exists jq; then
-		# Header via stdin (printf is a builtin), so the token never shows up in the process list.
+		# Header via stdin (printf is a builtin), so the token never appears in argv.
 		if key_json="$(printf 'Coder-Session-Token: %s\n' "$CODER_AGENT_TOKEN" |
 			curl -fsS -H @- "$CODER_AGENT_URL/api/v2/workspaceagents/me/gitsshkey")"; then
 			mkdir -p "$HOME/.ssh"
-			jq -r .public_key <<<"$key_json" >"$HOME/.ssh/id_ed25519.pub"
-			git config --global gpg.ssh.program "$DOTFILES_DIR/bin/coder-ssh-sign"
-			log_info "Git signing uses bin/coder-ssh-sign (Coder key fetched per signature, not stored)"
-		else
-			log_warning "Could not fetch Coder git SSH key; commits will fail to sign"
-		fi
-	fi
-	# Otherwise, on Linux with SSH agent forwarding, create public key from agent if not present
-	if [[ "$OSTYPE" == "linux-gnu"* ]] && [[ ! -f "$HOME/.ssh/id_ed25519.pub" ]]; then
-		if command_exists ssh-add && ssh-add -L &>/dev/null; then
-			mkdir -p "$HOME/.ssh"
-			ssh-add -L | head -1 >"$HOME/.ssh/id_ed25519.pub"
-			log_info "Created SSH public key from forwarded agent for git signing"
+			local coder_public_key
+			coder_public_key="$(jq -r '.public_key // empty' <<<"$key_json" 2>/dev/null)"
+			if [[ -n "$coder_public_key" ]]; then
+				printf '%s\n' "$coder_public_key" >"$HOME/.ssh/id_ed25519.pub" || true
+			fi
+			if [[ -s "$HOME/.ssh/id_ed25519.pub" ]]; then
+				git config --global gpg.ssh.program "$DOTFILES_DIR/bin/coder-ssh-sign"
+				git config --global commit.gpgsign true
+				git config --global tag.gpgsign true
+				signing_configured=true
+				log_info "Git signing uses bin/coder-ssh-sign (Coder key fetched per signature)"
+			fi
 		fi
 	fi
 
-	# On macOS with the 1Password app, sign via its SSH agent (op-ssh-sign). Like the Coder
-	# identity above, this lands in the ~/.gitconfig stub, not the tracked .gitconfig. The
-	# public key must still be saved to ~/.ssh/id_ed25519.pub (see configure_git_signing_hint).
-	local op_sign="/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
-	if [[ "$OSTYPE" == "darwin"* && -x "$op_sign" ]]; then
-		git config --global gpg.ssh.program "$op_sign"
-		log_info "Git signing uses 1Password (op-ssh-sign)"
+	# macOS: prefer 1Password, otherwise use an existing local SSH key through ssh-keygen.
+	if [[ "$signing_configured" == false && "$OSTYPE" == "darwin"* ]]; then
+		local op_sign="/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+		if [[ -x "$op_sign" && -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+			git config --global gpg.ssh.program "$op_sign"
+			git config --global commit.gpgsign true
+			git config --global tag.gpgsign true
+			signing_configured=true
+			log_info "Git signing uses 1Password (op-ssh-sign)"
+		elif [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+			# An ed25519 key in ~/.ssh can be loaded in Apple's ssh-agent or 1Password.
+			git config --global commit.gpgsign true
+			git config --global tag.gpgsign true
+			signing_configured=true
+			log_info "Git signing uses the local SSH public key $HOME/.ssh/id_ed25519.pub"
+		fi
+	fi
+
+	# Linux/other systems: use an already forwarded or running SSH agent, if it has a key.
+	if [[ "$signing_configured" == false && "$OSTYPE" == "linux-gnu"* ]]; then
+		if command_exists ssh-add && ssh-add -L &>/dev/null; then
+			mkdir -p "$HOME/.ssh"
+			if ssh-add -L | head -1 >"$HOME/.ssh/id_ed25519.pub" &&
+				[[ -s "$HOME/.ssh/id_ed25519.pub" ]]; then
+				git config --global commit.gpgsign true
+				git config --global tag.gpgsign true
+				signing_configured=true
+				log_info "Git signing uses the forwarded SSH agent key"
+			fi
+		fi
+	fi
+
+	# Explicitly disable forced signing where this machine has no usable signer.
+	if [[ "$signing_configured" == false ]]; then
+		git config --global commit.gpgsign false
+		git config --global tag.gpgsign false
+		git config --global --unset-all gpg.ssh.program >/dev/null 2>&1 || true
+		log_info "No usable SSH signing key found; forced commit/tag signing is disabled on this machine"
 	fi
 
 	# Link mise global config (always — mise itself is installed by this script).
@@ -430,22 +460,23 @@ link_config_files() {
 configure_git_signing_hint() {
 	local signing_key="$HOME/.ssh/id_ed25519"
 	local signing_pub="$HOME/.ssh/id_ed25519.pub"
+	local commit_signing
+	commit_signing="$(git config --global --bool commit.gpgsign 2>/dev/null || echo false)"
 
-	if [[ "$(git config --global --get gpg.ssh.program 2>/dev/null)" == *op-ssh-sign ]]; then
-		# 1Password holds the private key; only the public key is needed on disk.
-		if [[ -f "$signing_pub" ]]; then
-			log_info "Git signing via 1Password. Ensure the SSH agent is enabled in 1Password > Settings > Developer."
-		else
-			log_warning "Git signing via 1Password, but $signing_pub is missing: save your SSH public key there (1Password > the key > copy Public Key), or commits will fail to sign"
-		fi
-	elif [[ -f "$signing_key" && -f "$signing_pub" ]]; then
-		if [[ "$OSTYPE" == "darwin"* ]]; then
+	if [[ "$commit_signing" != true ]]; then
+		log_info "Forced commit/tag signing is disabled on this machine"
+	elif [[ "$(git config --global --get gpg.ssh.program 2>/dev/null)" == *op-ssh-sign ]]; then
+		log_info "Git signing via 1Password. Ensure the SSH agent is enabled in 1Password > Settings > Developer."
+	elif [[ "$(git config --global --get gpg.ssh.program 2>/dev/null)" == *coder-ssh-sign ]]; then
+		log_info "Git signing via the Coder SSH key helper"
+	elif [[ -f "$signing_pub" ]]; then
+		if [[ "$OSTYPE" == "darwin"* && -f "$signing_key" ]]; then
 			log_info "Git SSH signing key detected. If needed, load it with: ssh-add --apple-use-keychain $signing_key"
 		else
-			log_info "Git SSH signing key detected. Ensure it is loaded in ssh-agent for signed commits."
+			log_info "Git signing uses $signing_pub with the available SSH agent"
 		fi
 	else
-		log_info "Git SSH signing is configured, but no id_ed25519 keypair was found in ~/.ssh"
+		log_warning "Forced signing is enabled but $signing_pub is missing"
 	fi
 }
 
