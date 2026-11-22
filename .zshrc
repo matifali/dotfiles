@@ -29,8 +29,10 @@ export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="agnoster"
 
 # Plugins. Computed dynamically based on what's installed so the committed
-# .zshrc doesn't need install-time mutation.
-plugins=(git zsh-autosuggestions zsh-completions zsh-syntax-highlighting)
+# .zshrc doesn't need install-time mutation. zsh-syntax-highlighting is not
+# listed: it must load last, so it is sourced explicitly below (listing it too
+# would load it twice).
+plugins=(git zsh-autosuggestions zsh-completions)
 [[ "$OSTYPE" == "darwin"* ]] && plugins+=(brew macos)
 command -v gh >/dev/null 2>&1 && plugins+=(gh)
 command -v bun >/dev/null 2>&1 && plugins+=(bun)
@@ -53,7 +55,7 @@ fi
 # Add GOPATH/bin to PATH for binaries from `go install`.
 # Append so project tools managed by mise take precedence.
 if command -v go >/dev/null 2>&1; then
-  path+=("$(go env GOPATH)/bin")
+  path+=("${GOPATH:-$HOME/go}/bin")
 fi
 
 # Local secrets
