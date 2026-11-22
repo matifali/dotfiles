@@ -4,7 +4,7 @@ description: Agent instructions for mux
 ---
 
 ## Coder Workspace GitHub Auth
-When running in a Coder workspace (`CODER=1` environment variable is set):
+When running in a Coder workspace (`CODER=true` environment variable is set):
 - Obtain GitHub token via: `coder external-auth access-token github`
 - Use the token to authenticate `git` and `gh` CLI:
   ```bash
