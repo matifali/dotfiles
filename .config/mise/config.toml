@@ -24,3 +24,5 @@ gh = "latest"
 sops = "latest"
 golangci-lint = "latest"
 pnpm = "latest"
+# 1Password CLI; only useful on macOS where the desktop app provides SSH signing.
+op = { version = "latest", os = ["macos"] }
